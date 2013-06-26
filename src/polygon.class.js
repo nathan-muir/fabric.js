@@ -30,16 +30,31 @@
      * Constructor
      * @param {Array} points Array of points
      * @param {Object} [options] Options object
-     * @param {Boolean} Whether points offsetting should be skipped
+     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      * @return {fabric.Polygon} thisArg
      */
     initialize: function(points, options, skipOffset) {
       options = options || { };
-      this.points = points;
+
       this.callSuper('initialize', options);
+
+      this.points = points;
       this._calcDimensions(skipOffset);
+      this.setCoords();
     },
 
+    /**
+     * @private
+     * @param {String} key
+     * @param {Any} value
+     */
+    _set: function(key, value) {
+      this[key] = value;
+      if (key == "points") {
+        this._calcDimensions(false);
+      }
+      return this;
+    },
     /**
      * @private
      */
@@ -62,10 +77,12 @@
       var halfWidth = this.width / 2,
           halfHeight = this.height / 2;
 
+      this.left = minX + halfWidth;
+      this.top = minY + halfHeight;
       // change points to offset polygon into a bounding box
       this.points.forEach(function(p) {
-        p.x -= halfWidth;
-        p.y -= halfHeight;
+        p.x -= this.left;
+        p.y -= this.top;
       }, this);
     },
 
