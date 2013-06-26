@@ -23,6 +23,7 @@
     /**
      * Type of an object
      * @type String
+     * @default
      */
     type: 'image',
 
@@ -30,7 +31,7 @@
      * Constructor
      * @param {HTMLImageElement | String} element Image element
      * @param {Object} [options] Options object
-     * @return {fabric.Image}
+     * @return {fabric.Image} thisArg
      */
     initialize: function(element, options) {
       options || (options = { });
@@ -50,7 +51,7 @@
 
     /**
      * Returns image element which this instance if based on
-     * @return {HTMLImageElement} image element
+     * @return {HTMLImageElement} Image element
      */
     getElement: function() {
       return this._element;
@@ -104,6 +105,7 @@
         this.transform(ctx);
       }
 
+      ctx.save();
       this._setShadow(ctx);
       this.clipTo && fabric.util.clipContext(this, ctx);
       this._render(ctx);
@@ -112,6 +114,7 @@
       }
       this._renderStroke(ctx);
       this.clipTo && ctx.restore();
+      ctx.restore();
 
       if (this.active && !noTransform) {
         this.drawBorders(ctx);
@@ -127,10 +130,16 @@
     _stroke: function(ctx) {
       ctx.save();
       ctx.lineWidth = this.strokeWidth;
-      ctx.strokeStyle = this.stroke;
+      ctx.lineCap = this.strokeLineCap;
+      ctx.lineJoin = this.strokeLineJoin;
+      ctx.miterLimit = this.strokeMiterLimit;
+      ctx.strokeStyle = this.stroke.toLive
+        ? this.stroke.toLive(ctx)
+        : this.stroke;
+
       ctx.beginPath();
       ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
-      ctx.beginPath();
+      ctx.closePath();
       ctx.restore();
     },
 
@@ -144,14 +153,22 @@
          w = this.width,
          h = this.height;
 
+      ctx.save();
       ctx.lineWidth = this.strokeWidth;
-      ctx.strokeStyle = this.stroke;
+      ctx.lineCap = this.strokeLineCap;
+      ctx.lineJoin = this.strokeLineJoin;
+      ctx.miterLimit = this.strokeMiterLimit;
+      ctx.strokeStyle = this.stroke.toLive
+        ? this.stroke.toLive(ctx)
+        : this.stroke;
+
       ctx.beginPath();
       fabric.util.drawDashedLine(ctx, x, y, x+w, y, this.strokeDashArray);
       fabric.util.drawDashedLine(ctx, x+w, y, x+w, y+h, this.strokeDashArray);
       fabric.util.drawDashedLine(ctx, x+w, y+h, x, y+h, this.strokeDashArray);
       fabric.util.drawDashedLine(ctx, x, y+h, x, y, this.strokeDashArray);
       ctx.closePath();
+      ctx.restore();
     },
 
     /**
@@ -359,7 +376,7 @@
 
     /**
      * Returns complexity of an instance
-     * @return {Number} complexity
+     * @return {Number} complexity of this instance
      */
     complexity: function() {
       return 1;
@@ -429,12 +446,13 @@
     });
   };
 
+  /* _FROM_SVG_START_ */
   /**
    * List of attribute names to account for when parsing SVG element (used by {@link fabric.Image.fromElement})
    * @static
    * @see http://www.w3.org/TR/SVG/struct.html#ImageElement
    */
-  fabric.Image.ATTRIBUTE_NAMES = 'x y width height fill fill-opacity opacity stroke stroke-width transform xlink:href'.split(' ');
+  fabric.Image.ATTRIBUTE_NAMES = fabric.SHARED_ATTRIBUTES.concat('x y width height xlink:href'.split(' '));
 
   /**
    * Returns {@link fabric.Image} instance from an SVG element
@@ -442,7 +460,7 @@
    * @param {SVGElement} element Element to parse
    * @param {Function} callback Callback to execute when fabric.Image object is created
    * @param {Object} [options] Options object
-   * @return {fabric.Image}
+   * @return {fabric.Image} Instance of fabric.Image
    */
   fabric.Image.fromElement = function(element, callback, options) {
     var parsedAttributes = fabric.parseAttributes(element, fabric.Image.ATTRIBUTE_NAMES);
@@ -450,6 +468,7 @@
     fabric.Image.fromURL(parsedAttributes['xlink:href'], callback,
       extend((options ? fabric.util.object.clone(options) : { }), parsedAttributes));
   };
+  /* _FROM_SVG_END_ */
 
   /**
    * Indicates that instances of this type are async

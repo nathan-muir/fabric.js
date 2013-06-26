@@ -35,6 +35,7 @@
     /**
      * Type of an object
      * @type String
+     * @default
      */
     type: 'group',
 
@@ -270,13 +271,13 @@
       var groupLeft = this.get('left'),
           groupTop = this.get('top'),
           groupAngle = this.getAngle() * (Math.PI / 180),
-          rotatedTop = Math.cos(groupAngle) * object.get('top') + Math.sin(groupAngle) * object.get('left'),
-          rotatedLeft = -Math.sin(groupAngle) * object.get('top') + Math.cos(groupAngle) * object.get('left');
+          rotatedTop = Math.cos(groupAngle) * object.get('top') * this.get('scaleY') + Math.sin(groupAngle) * object.get('left') * this.get('scaleX'),
+          rotatedLeft = -Math.sin(groupAngle) * object.get('top') * this.get('scaleY') + Math.cos(groupAngle) * object.get('left') * this.get('scaleX');
 
       object.setAngle(object.getAngle() + this.getAngle());
 
-      object.set('left', groupLeft + rotatedLeft * this.get('scaleX'));
-      object.set('top', groupTop + rotatedTop * this.get('scaleY'));
+      object.set('left', groupLeft + rotatedLeft);
+      object.set('top', groupTop + rotatedTop);
 
       object.set('scaleX', object.get('scaleX') * this.get('scaleX'));
       object.set('scaleY', object.get('scaleY') * this.get('scaleY'));
@@ -381,24 +382,6 @@
 
       this.left = (minX + width / 2) || 0;
       this.top = (minY + height / 2) || 0;
-    },
-
-    /**
-     * Checks if point is contained within the group
-     * @param {fabric.Point} point point with `x` and `y` properties
-     * @return {Boolean} true if point is contained within group
-     */
-    containsPoint: function(point) {
-
-      var halfWidth = this.get('width') / 2,
-          halfHeight = this.get('height') / 2,
-          centerX = this.get('left'),
-          centerY = this.get('top');
-
-      return  centerX - halfWidth < point.x &&
-              centerX + halfWidth > point.x &&
-              centerY - halfHeight < point.y &&
-              centerY + halfHeight > point.y;
     },
 
     /* _TO_SVG_START_ */

@@ -23,10 +23,8 @@ fabric.PatternBrush = fabric.util.createClass(fabric.PencilBrush, /** @lends fab
     return patternCanvas;
   },
 
-  getPatternSrcBody: function() {
-    return String(this.getPatternSrc)
-      .match(/function\s+\w*\s*\(.*\)\s+\{([\s\S]*)\}/)[1]
-      .replace('this.color', '"' + this.color + '"');
+  getPatternSrcFunction: function() {
+    return String(this.getPatternSrc).replace('this.color', '"' + this.color + '"');
   },
 
   /**
@@ -50,7 +48,7 @@ fabric.PatternBrush = fabric.util.createClass(fabric.PencilBrush, /** @lends fab
   createPath: function(pathData) {
     var path = this.callSuper('createPath', pathData);
     path.stroke = new fabric.Pattern({
-      source: this.source || this.getPatternSrcBody()
+      source: this.source || this.getPatternSrcFunction()
     });
     return path;
   }

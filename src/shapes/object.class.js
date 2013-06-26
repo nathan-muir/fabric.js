@@ -22,146 +22,197 @@
     /**
      * Type of an object (rect, circle, path, etc.)
      * @type String
+     * @default
      */
     type:                     'object',
 
     /**
      * Horizontal origin of transformation of an object (one of "left", "right", "center")
      * @type String
+     * @default
      */
     originX:                  'center',
 
     /**
      * Vertical origin of transformation of an object (one of "top", "bottom", "center")
      * @type String
+     * @default
      */
     originY:                  'center',
 
     /**
      * Top position of an object. Note that by default it's relative to object center. You can change this by setting originY={top/center/bottom}
      * @type Number
+     * @default
      */
     top:                      0,
 
     /**
      * Left position of an object. Note that by default it's relative to object center. You can change this by setting originX={left/center/right}
      * @type Number
+     * @default
      */
     left:                     0,
 
     /**
      * Object width
      * @type Number
+     * @default
      */
     width:                    0,
 
     /**
      * Object height
      * @type Number
+     * @default
      */
     height:                   0,
 
     /**
      * Object scale factor (horizontal)
      * @type Number
+     * @default
      */
     scaleX:                   1,
 
     /**
      * Object scale factor (vertical)
      * @type Number
+     * @default
      */
     scaleY:                   1,
 
     /**
      * When true, an object is rendered as flipped horizontally
      * @type Boolean
+     * @default
      */
     flipX:                    false,
 
     /**
      * When true, an object is rendered as flipped vertically
      * @type Boolean
+     * @default
      */
     flipY:                    false,
 
     /**
      * Opacity of an object
      * @type Number
+     * @default
      */
     opacity:                  1,
 
     /**
      * Angle of rotation of an object (in degrees)
      * @type Number
+     * @default
      */
     angle:                    0,
 
     /**
-     * Size of object's corners (in pixels)
+     * Size of object's controlling corners (in pixels)
      * @type Number
+     * @default
      */
     cornerSize:               12,
 
     /**
-     * When true, object's corners are rendered as transparent inside (i.e. stroke instead of fill)
+     * When true, object's controlling corners are rendered as transparent inside (i.e. stroke instead of fill)
      * @type Boolean
+     * @default
      */
     transparentCorners:       true,
 
     /**
-     * Padding between object and its borders (in pixels)
+     * Padding between object and its controlling borders (in pixels)
      * @type Number
+     * @default
      */
     padding:                  0,
 
     /**
-     * Border color of an object (when it's active)
+     * Color of controlling borders of an object (when it's active)
      * @type String
+     * @default
      */
     borderColor:              'rgba(102,153,255,0.75)',
 
     /**
-     * Corner color of an object (when it's active)
+     * Color of controlling corners of an object (when it's active)
      * @type String
+     * @default
      */
     cornerColor:              'rgba(102,153,255,0.5)',
 
     /**
+     * When true, this object will use center point as the origin of transformation
+     * when being resized via the controls
+     * @type Boolean
+     */
+    centerTransform:        false,
+
+    /**
      * Color of object's fill
      * @type String
+     * @default
      */
     fill:                     'rgb(0,0,0)',
 
     /**
      * Fill rule used to fill an object
      * @type String
+     * @default
      */
     fillRule:                 'source-over',
 
     /**
      * Overlay fill (takes precedence over fill value)
      * @type String
+     * @default
      */
     overlayFill:              null,
 
     /**
-     * When `true`, an object is rendered via stroke and this property specifies its color
+     * When defined, an object is rendered via stroke and this property specifies its color
      * @type String
+     * @default
      */
     stroke:                   null,
 
     /**
      * Width of a stroke used to render this object
      * @type Number
+     * @default
      */
     strokeWidth:              1,
 
     /**
-     * Array specifying dash pattern of an object's stroke
+     * Array specifying dash pattern of an object's stroke (stroke must be defined)
      * @type Array
      */
     strokeDashArray:          null,
+
+    /**
+     * Line endings style of an object's stroke (one of "butt", "round", "square")
+     * @type String
+     * @default
+     */
+    strokeLineCap:            'butt',
+
+    /**
+     * Corner style of an object's stroke (one of "bevil", "round", "miter")
+     * @type String
+     * @default
+     */
+    strokeLineJoin:           'miter',
+
+    /**
+     * Maximum miter length (used for strokeLineJoin = "miter") of an object's stroke
+     * @type Number
+     * @default
+     */
+    strokeMiterLimit:         10,
 
     /**
      * Shadow object representing shadow of this shape
@@ -170,14 +221,16 @@
     shadow:                   null,
 
     /**
-     * Border opacity when object is active and moving
+     * Opacity of object's controlling borders when object is active and moving
      * @type Number
+     * @default
      */
     borderOpacityWhenMoving:  0.4,
 
     /**
-     * Border scale factor
+     * Scale factor of object's controlling borders
      * @type Number
+     * @default
      */
     borderScaleFactor:        1,
 
@@ -190,54 +243,63 @@
     /**
      * Minimum allowed scale value of an object
      * @type Number
+     * @default
      */
     minScaleLimit:            0.01,
 
     /**
      * When set to `false`, an object can not be selected for modification (using either point-click-based or group-based selection)
      * @type Boolean
+     * @default
      */
     selectable:               true,
 
     /**
      * When set to `false`, an object is not rendered on canvas
      * @type Boolean
+     * @default
      */
     visible:                  true,
 
     /**
      * When set to `false`, object's controls are not displayed and can not be used to manipulate object
      * @type Boolean
+     * @default
      */
     hasControls:              true,
 
     /**
-     * When set to `false`, object's borders are not rendered
+     * When set to `false`, object's controlling borders are not rendered
      * @type Boolean
+     * @default
      */
     hasBorders:               true,
 
     /**
-     * When set to `false`, object's rotating point will not be visible or selectable
+     * When set to `false`, object's controlling rotating point will not be visible or selectable
      * @type Boolean
+     * @default
      */
     hasRotatingPoint:         true,
 
     /**
-     * Offset for object's rotating point (when enabled via `hasRotatingPoint`)
+     * Offset for object's controlling rotating point (when enabled via `hasRotatingPoint`)
      * @type Number
+     * @default
      */
     rotatingPointOffset:      40,
 
     /**
      * When set to `true`, objects are "found" on canvas on per-pixel basis rather than according to bounding box
      * @type Boolean
+     * @default
      */
     perPixelTargetFind:       false,
 
     /**
      * When `false`, default object's values are not included in its serialization
      * @type Boolean
+     * @default
      */
     includeDefaultValues:     true,
 
@@ -250,38 +312,44 @@
     /**
      * When `true`, object horizontal movement is locked
      * @type Boolean
+     * @default
      */
-    lockMovementX:  false,
+    lockMovementX:            false,
 
     /**
      * When `true`, object vertical movement is locked
      * @type Boolean
+     * @default
      */
-    lockMovementY:  false,
+    lockMovementY:            false,
 
     /**
      * When `true`, object rotation is locked
      * @type Boolean
+     * @default
      */
-    lockRotation:   false,
+    lockRotation:             false,
 
     /**
      * When `true`, object horizontal scaling is locked
      * @type Boolean
+     * @default
      */
-    lockScalingX:   false,
+    lockScalingX:             false,
 
     /**
      * When `true`, object vertical scaling is locked
      * @type Boolean
+     * @default
      */
-    lockScalingY:   false,
+    lockScalingY:             false,
 
     /**
      * When `true`, object non-uniform scaling is locked
      * @type Boolean
+     * @default
      */
-    lockUniScaling: false,
+    lockUniScaling:           false,
 
     /**
      * List of properties to consider when checking if state
@@ -337,6 +405,18 @@
     },
 
     /**
+     * @private
+     */
+    _initClipping: function(options) {
+      if (!options.clipTo || typeof options.clipTo !== 'string') return;
+
+      var functionBody = fabric.util.getFunctionBody(options.clipTo);
+      if (typeof functionBody !== 'undefined') {
+        this.clipTo = new Function('ctx', functionBody);
+      }
+    },
+
+    /**
      * Sets object's properties from options
      * @param {Object} [options]
      */
@@ -347,12 +427,13 @@
       this._initGradient(options);
       this._initPattern(options);
       this._initShadow(options);
+      this._initClipping(options);
     },
 
     /**
      * Transforms context when rendering an object
      * @param {CanvasRenderingContext2D} ctx Context
-     * @param {Boolean} when true, context is transformed to object's top/left corner. This is used when rendering text on Node
+     * @param {Boolean} fromLeft When true, context is transformed to object's top/left corner. This is used when rendering text on Node
      */
     transform: function(ctx, fromLeft) {
       ctx.globalAlpha = this.opacity;
@@ -368,8 +449,8 @@
 
     /**
      * Returns an object representation of an instance
-     * @param {Array} propertiesToInclude
-     * @return {Object} object representation of an instance
+     * @param {Array} [propertiesToInclude] Any properties that you might want to additionally include in the output
+     * @return {Object} Object representation of an instance
      */
     toObject: function(propertiesToInclude) {
 
@@ -386,8 +467,11 @@
         fill:               (this.fill && this.fill.toObject) ? this.fill.toObject() : this.fill,
         overlayFill:        this.overlayFill,
         stroke:             (this.stroke && this.stroke.toObject) ? this.stroke.toObject() : this.stroke,
-        strokeWidth:        this.strokeWidth,
+        strokeWidth:        toFixed(this.strokeWidth, NUM_FRACTION_DIGITS),
         strokeDashArray:    this.strokeDashArray,
+        strokeLineCap:      this.strokeLineCap,
+        strokeLineJoin:     this.strokeLineJoin,
+        strokeMiterLimit:   toFixed(this.strokeMiterLimit, NUM_FRACTION_DIGITS),
         scaleX:             toFixed(this.scaleX, NUM_FRACTION_DIGITS),
         scaleY:             toFixed(this.scaleY, NUM_FRACTION_DIGITS),
         angle:              toFixed(this.getAngle(), NUM_FRACTION_DIGITS),
@@ -401,7 +485,8 @@
         transparentCorners: this.transparentCorners,
         perPixelTargetFind: this.perPixelTargetFind,
         shadow:             (this.shadow && this.shadow.toObject) ? this.shadow.toObject() : this.shadow,
-        visible:            this.visible
+        visible:            this.visible,
+        clipTo:             this.clipTo && String(this.clipTo)
       };
 
       if (!this.includeDefaultValues) {
@@ -414,14 +499,15 @@
 
     /**
      * Returns (dataless) object representation of an instance
-     * @param {Array} [propertiesToInclude]
-     * @return {Object} object representation of an instance
+     * @param {Array} [propertiesToInclude] Any properties that you might want to additionally include in the output
+     * @return {Object} Object representation of an instance
      */
     toDatalessObject: function(propertiesToInclude) {
       // will be overwritten by subclasses
       return this.toObject(propertiesToInclude);
     },
 
+    /* _TO_SVG_START_ */
     /**
      * Returns styles-string for svg-export
      * @return {String}
@@ -431,6 +517,9 @@
         "stroke: ", (this.stroke ? this.stroke : 'none'), "; ",
         "stroke-width: ", (this.strokeWidth ? this.strokeWidth : '0'), "; ",
         "stroke-dasharray: ", (this.strokeDashArray ? this.strokeDashArray.join(' ') : ''), "; ",
+        "stroke-linecap: ", (this.strokeLineCap ? this.strokeLineCap : 'butt'), "; ",
+        "stroke-linejoin: ", (this.strokeLineJoin ? this.strokeLineJoin : 'miter'), "; ",
+        "stroke-miterlimit: ", (this.strokeMiterLimit ? this.strokeMiterLimit : '4'), "; ",
         "fill: ", (this.fill ? (this.fill && this.fill.toLive ? 'url(#SVGID_' + this.fill.id + ')' : this.fill) : 'none'), "; ",
         "opacity: ", (typeof this.opacity !== 'undefined' ? this.opacity : '1'), ";",
         (this.visible ? '' : " visibility: hidden;")
@@ -470,9 +559,11 @@
 
       return [ translatePart, anglePart, scalePart, flipXPart, flipYPart ].join('');
     },
+    /* _TO_SVG_END_ */
 
     /**
      * @private
+     * @param {Object} object
      */
     _removeDefaultValues: function(object) {
       var defaultOptions = fabric.Object.prototype.options;
@@ -505,7 +596,7 @@
 
     /**
      * Sets property to a given value. When changing position/dimension -related properties (left, top, scale, angle, etc.) `set` does not update position of object's borders/controls. If you need to update those, call `setCoords()`.
-     * @param {String} name
+     * @param {String|Object} key (if object, iterate over the object properties)
      * @param {Object|Function} value (if function, the value is passed into it and its return value is used as a new one)
      * @return {fabric.Object} thisArg
      * @chainable
@@ -517,7 +608,7 @@
         }
       }
       else {
-        if (typeof value === 'function') {
+        if (typeof value === 'function' && key !== 'clipTo') {
           this._set(key, value(this.get(key)));
         }
         else {
@@ -529,8 +620,9 @@
 
     /**
      * @private
-     * @param key
-     * @param value
+     * @param {String} key
+     * @param {Any} value
+     * @return {fabric.Object} thisArg
      */
     _set: function(key, value) {
       var shouldConstrainValue = (key === 'scaleX' || key === 'scaleY');
@@ -600,14 +692,14 @@
         this.transform(ctx);
       }
 
-      if (this.stroke || this.strokeDashArray) {
+      if (this.stroke) {
         ctx.lineWidth = this.strokeWidth;
-        if (this.stroke && this.stroke.toLive) {
-          ctx.strokeStyle = this.stroke.toLive(ctx);
-        }
-        else {
-          ctx.strokeStyle = this.stroke;
-        }
+        ctx.lineCap = this.strokeLineCap;
+        ctx.lineJoin = this.strokeLineJoin;
+        ctx.miterLimit = this.strokeMiterLimit;
+        ctx.strokeStyle = this.stroke.toLive
+          ? this.stroke.toLive(ctx)
+          : this.stroke;
       }
 
       if (this.overlayFill) {
@@ -686,8 +778,9 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _renderStroke: function(ctx) {
-      if (!this.stroke && !this.strokeDashArray) return;
+      if (!this.stroke) return;
 
+      ctx.save();
       if (this.strokeDashArray) {
         // Spec requires the concatenation of two copies the dash list when the number of elements is odd
         if (1 & this.strokeDashArray.length) {
@@ -707,12 +800,13 @@
         this._stroke ? this._stroke(ctx) : ctx.stroke();
       }
       this._removeShadow(ctx);
+      ctx.restore();
     },
 
     /**
      * Clones an instance
      * @param {Function} callback Callback is invoked with a clone as a first argument
-     * @param {Array} propertiesToInclude
+     * @param {Array} [propertiesToInclude] Any properties that you might want to additionally include in the outpu
      * @return {fabric.Object} clone of an instance
      */
     clone: function(callback, propertiesToInclude) {
@@ -739,7 +833,7 @@
 
     /**
      * Converts an object into a data-url-like string
-     * @param {Object} options
+     * @param {Object} options Options object
      *
      *  `format` the format of the output image. Either "jpeg" or "png".
      *  `quality` quality level (0..1)
@@ -807,7 +901,7 @@
 
     /**
      * Returns complexity of an instance
-     * @return {Number} complexity
+     * @return {Number} complexity of this instance
      */
     complexity: function() {
       return 0;
@@ -815,7 +909,7 @@
 
     /**
      * Returns a JSON representation of an instance
-     * @param {Array} propertiesToInclude Any properties that you might want to additionally include in the output
+     * @param {Array} [propertiesToInclude] Any properties that you might want to additionally include in the output
      * @return {Object} JSON
      */
     toJSON: function(propertiesToInclude) {

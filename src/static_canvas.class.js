@@ -35,6 +35,7 @@
 
   extend(fabric.StaticCanvas.prototype, fabric.Observable);
   extend(fabric.StaticCanvas.prototype, fabric.Collection);
+  extend(fabric.StaticCanvas.prototype, fabric.DataURLExporter);
 
   extend(fabric.StaticCanvas.prototype, /** @lends fabric.StaticCanvas.prototype */ {
 
@@ -55,7 +56,7 @@
      * Opacity of the background image of the canvas instance
      * @type Float
      */
-    backgroundImageOpacity: 1.0,
+    backgroundImageOpacity: 1,
 
     /**
      * Indicates whether the background image should be stretched to fit the
@@ -554,7 +555,7 @@
         canvasToDrawOn.drawImage(this.overlayImage, this.overlayImageLeft, this.overlayImageTop);
       }
 
-      if (this.controlsAboveOverlay) {
+      if (this.controlsAboveOverlay && this.interactive) {
         this.drawControls(canvasToDrawOn);
       }
 
@@ -608,167 +609,6 @@
       this.fire('after:render');
 
       return this;
-    },
-
-    /**
-     * Draws objects' controls (borders/controls)
-     * @param {Object} ctx context to render controls on
-     */
-    drawControls: function(ctx) {
-      var activeGroup = this.getActiveGroup();
-      if (activeGroup) {
-        ctx.save();
-        fabric.Group.prototype.transform.call(activeGroup, ctx);
-        activeGroup.drawBorders(ctx).drawControls(ctx);
-        ctx.restore();
-      }
-      else {
-        for (var i = 0, len = this._objects.length; i < len; ++i) {
-          if (!this._objects[i] || !this._objects[i].active) continue;
-
-          ctx.save();
-          fabric.Object.prototype.transform.call(this._objects[i], ctx);
-          this._objects[i].drawBorders(ctx).drawControls(ctx);
-          ctx.restore();
-
-          this.lastRenderedObjectWithControlsAboveOverlay = this._objects[i];
-        }
-      }
-    },
-
-    /**
-     * Exports canvas element to a dataurl image.
-     * @param {Object} options
-     *
-     *  `format` the format of the output image. Either "jpeg" or "png".
-     *  `quality` quality level (0..1)
-     *  `multiplier` multiplier to scale by {Number}
-     *
-     * @return {String}
-     */
-    toDataURL: function (options) {
-      options || (options = { });
-
-      var format = options.format || 'png',
-          quality = options.quality || 1,
-          multiplier = options.multiplier || 1;
-
-      if (multiplier !== 1) {
-        return this.__toDataURLWithMultiplier(format, quality, multiplier);
-      }
-      else {
-        return this.__toDataURL(format, quality);
-      }
-    },
-
-    /**
-     * @private
-     */
-    __toDataURL: function(format, quality) {
-      this.renderAll(true);
-      var canvasEl = this.upperCanvasEl || this.lowerCanvasEl;
-      var data = (fabric.StaticCanvas.supports('toDataURLWithQuality'))
-                ? canvasEl.toDataURL('image/' + format, quality)
-                : canvasEl.toDataURL('image/' + format);
-
-      this.contextTop && this.clearContext(this.contextTop);
-      this.renderAll();
-      return data;
-    },
-
-    /**
-     * @private
-     */
-    __toDataURLWithMultiplier: function(format, quality, multiplier) {
-
-      var origWidth = this.getWidth(),
-          origHeight = this.getHeight(),
-          scaledWidth = origWidth * multiplier,
-          scaledHeight = origHeight * multiplier,
-          activeObject = this.getActiveObject(),
-          activeGroup = this.getActiveGroup(),
-
-          ctx = this.contextTop || this.contextContainer;
-
-      this.setWidth(scaledWidth).setHeight(scaledHeight);
-      ctx.scale(multiplier, multiplier);
-
-      if (activeGroup) {
-        // not removing group due to complications with restoring it with correct state afterwords
-        this._tempRemoveBordersControlsFromGroup(activeGroup);
-      }
-      else if (activeObject && this.deactivateAll) {
-        this.deactivateAll();
-      }
-
-      // restoring width, height for `renderAll` to draw
-      // background properly (while context is scaled)
-      this.width = origWidth;
-      this.height = origHeight;
-
-      this.renderAll(true);
-
-      var data = this.__toDataURL(format, quality);
-
-      ctx.scale(1 / multiplier,  1 / multiplier);
-      this.setWidth(origWidth).setHeight(origHeight);
-
-      if (activeGroup) {
-        this._restoreBordersControlsOnGroup(activeGroup);
-      }
-      else if (activeObject && this.setActiveObject) {
-        this.setActiveObject(activeObject);
-      }
-
-      this.contextTop && this.clearContext(this.contextTop);
-      this.renderAll();
-
-      return data;
-    },
-
-    /**
-     * Exports canvas element to a dataurl image (allowing to change image size via multiplier).
-     * @deprecated since 1.0.13
-     * @param {String} format (png|jpeg)
-     * @param {Number} multiplier
-     * @param {Number} quality (0..1)
-     * @return {String}
-     */
-    toDataURLWithMultiplier: function (format, multiplier, quality) {
-      return this.toDataURL({
-        format: format,
-        multiplier: multiplier,
-        quality: quality
-      });
-    },
-
-    /**
-     * @private
-     */
-    _tempRemoveBordersControlsFromGroup: function(group) {
-      group.origHasControls = group.hasControls;
-      group.origBorderColor = group.borderColor;
-
-      group.hasControls = true;
-      group.borderColor = 'rgba(0,0,0,0)';
-
-      group.forEachObject(function(o) {
-        o.origBorderColor = o.borderColor;
-        o.borderColor = 'rgba(0,0,0,0)';
-      });
-    },
-
-    /**
-     * @private
-     */
-    _restoreBordersControlsOnGroup: function(group) {
-      group.hideControls = group.origHideControls;
-      group.borderColor = group.origBorderColor;
-
-      group.forEachObject(function(o) {
-        o.borderColor = o.origBorderColor;
-        delete o.origBorderColor;
-      });
     },
 
     /**
@@ -847,8 +687,13 @@
      * @private
      */
     _toObjectMethod: function (methodName, propertiesToInclude) {
+
+      var activeGroup = this.getActiveGroup();
+      if (activeGroup) {
+        this.discardActiveGroup();
+      }
       var data = {
-        objects: this._objects.map(function (instance) {
+        objects: this.getObjects().map(function (instance) {
           // TODO (kangax): figure out how to clean this up
           var originalValue;
           if (!this.includeDefaultValues) {
@@ -876,6 +721,10 @@
         data.overlayImageTop = this.overlayImageTop;
       }
       fabric.util.populateWithProperties(this, data, propertiesToInclude);
+      if (activeGroup) {
+        this.setActiveGroup(new fabric.Group(activeGroup.getObjects()));
+        activeGroup.forEachObject(function(o) { o.set('active', true) });
+      }
       return data;
     },
 
@@ -945,8 +794,16 @@
         );
       }
 
+      var activeGroup = this.getActiveGroup();
+      if (activeGroup) {
+        this.discardActiveGroup();
+      }
       for (var i = 0, objects = this.getObjects(), len = objects.length; i < len; i++) {
         markup.push(objects[i].toSVG());
+      }
+      if (activeGroup) {
+        this.setActiveGroup(new fabric.Group(activeGroup.getObjects()));
+        activeGroup.forEachObject(function(o) { o.set('active', true) });
       }
       markup.push('</svg>');
 
@@ -1094,21 +951,6 @@
         removeListener(fabric.window, 'resize', this._onResize);
       }
       return this;
-    },
-
-    /**
-     * @private
-     * @param {HTMLImageElement} imgEl
-     */
-    _resizeImageToFit: function (imgEl) {
-
-      var imageWidth = imgEl.width || imgEl.offsetWidth,
-          widthScaleFactor = this.getWidth() / imageWidth;
-
-      // scale image down so that it has original dimensions when printed in large resolution
-      if (imageWidth) {
-        imgEl.width = imageWidth * widthScaleFactor;
-      }
     }
   });
 

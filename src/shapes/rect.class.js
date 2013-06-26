@@ -21,20 +21,23 @@
     /**
      * Type of an object
      * @type String
+     * @default
      */
     type: 'rect',
 
     /**
      * Horizontal border radius
      * @type Number
+     * @default
      */
-    rx: 0,
+    rx:   0,
 
     /**
      * Vertical border radius
      * @type Number
+     * @default
      */
-    ry: 0,
+    ry:   0,
 
     /**
      * Used to specify dash pattern for stroke on this object
@@ -54,8 +57,8 @@
       this.callSuper('initialize', options);
       this._initRxRy();
 
-      this.x = 0;
-      this.y = 0;
+      this.x = options.x || 0;
+      this.y = options.y || 0;
     },
 
     /**
@@ -107,15 +110,17 @@
           -this.group.height / 2 + this.height / 2 + this.y);
       }
 
+      var isRounded = rx !== 0 || ry !== 0;
+
       ctx.moveTo(x+rx, y);
       ctx.lineTo(x+w-rx, y);
-      ctx.quadraticCurveTo(x+w, y, x+w, y+ry, x+w, y+ry);
+      isRounded && ctx.quadraticCurveTo(x+w, y, x+w, y+ry, x+w, y+ry);
       ctx.lineTo(x+w, y+h-ry);
-      ctx.quadraticCurveTo(x+w,y+h,x+w-rx,y+h,x+w-rx,y+h);
+      isRounded && ctx.quadraticCurveTo(x+w,y+h,x+w-rx,y+h,x+w-rx,y+h);
       ctx.lineTo(x+rx,y+h);
-      ctx.quadraticCurveTo(x,y+h,x,y+h-ry,x,y+h-ry);
+      isRounded && ctx.quadraticCurveTo(x,y+h,x,y+h-ry,x,y+h-ry);
       ctx.lineTo(x,y+ry);
-      ctx.quadraticCurveTo(x,y,x+rx,y,x+rx,y);
+      isRounded && ctx.quadraticCurveTo(x,y,x+rx,y,x+rx,y);
       ctx.closePath();
 
       this._renderFill(ctx);
@@ -164,7 +169,9 @@
     toObject: function(propertiesToInclude) {
       return extend(this.callSuper('toObject', propertiesToInclude), {
         rx: this.get('rx') || 0,
-        ry: this.get('ry') || 0
+        ry: this.get('ry') || 0,
+        x: this.get('x'),
+        y: this.get('y')
       });
     },
 
@@ -206,11 +213,12 @@
     }
   });
 
+  /* _FROM_SVG_START_ */
   /**
    * List of attribute names to account for when parsing SVG element (used by `fabric.Rect.fromElement`)
    * @static
    */
-  fabric.Rect.ATTRIBUTE_NAMES = 'x y width height rx ry fill fill-opacity opacity stroke stroke-width transform'.split(' ');
+  fabric.Rect.ATTRIBUTE_NAMES = fabric.SHARED_ATTRIBUTES.concat('x y rx ry width height'.split(' '));
 
   /**
    * @private
@@ -241,6 +249,7 @@
 
     return rect;
   };
+  /* _FROM_SVG_END_ */
 
   /**
    * Returns {@link fabric.Rect} instance from an object representation

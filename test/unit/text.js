@@ -7,45 +7,49 @@
   }
 
   var REFERENCE_TEXT_OBJECT = {
-    'type':             'text',
-    'originX':          'center',
-    'originY':          'center',
-    'left':             0,
-    'top':              0,
-    'width':            20,
-    'height':           52,
-    'fill':             'rgb(0,0,0)',
-    'overlayFill':      null,
-    'stroke':           '',
-    'strokeWidth':      1,
-    'strokeDashArray':  null,
-    'scaleX':           1,
-    'scaleY':           1,
-    'angle':            0,
-    'flipX':            false,
-    'flipY':            false,
-    'opacity':          1,
-    'selectable':       true,
-    'hasControls':      true,
-    'hasBorders':       true,
-    'hasRotatingPoint': true,
-    'transparentCorners': true,
-    'perPixelTargetFind': false,
-    'shadow':           null,
-    'visible':          true,
-    'text':             'x',
-    'fontSize':         40,
-    'fontWeight':       'normal',
-    'fontFamily':       'Times New Roman',
-    'fontStyle':        '',
-    'lineHeight':       1.3,
-    'textDecoration':   '',
-    'textShadow':       '',
-    'textAlign':        'left',
-    'path':             null,
-    'backgroundColor':  '',
-    'textBackgroundColor':  '',
-    'useNative':        true
+    'type':                'text',
+    'originX':             'center',
+    'originY':             'center',
+    'left':                0,
+    'top':                 0,
+    'width':               20,
+    'height':              52,
+    'fill':                'rgb(0,0,0)',
+    'overlayFill':         null,
+    'stroke':              null,
+    'strokeWidth':         1,
+    'strokeDashArray':     null,
+    'strokeLineCap':       'butt',
+    'strokeLineJoin':      'miter',
+    'strokeMiterLimit':    10,
+    'scaleX':              1,
+    'scaleY':              1,
+    'angle':               0,
+    'flipX':               false,
+    'flipY':               false,
+    'opacity':             1,
+    'selectable':          true,
+    'hasControls':         true,
+    'hasBorders':          true,
+    'hasRotatingPoint':    true,
+    'transparentCorners':  true,
+    'perPixelTargetFind':  false,
+    'shadow':              null,
+    'visible':             true,
+    'clipTo':              null,
+    'text':                'x',
+    'fontSize':            40,
+    'fontWeight':          'normal',
+    'fontFamily':          'Times New Roman',
+    'fontStyle':           '',
+    'lineHeight':          1.3,
+    'textDecoration':      '',
+    'textShadow':          '',
+    'textAlign':           'left',
+    'path':                null,
+    'backgroundColor':     '',
+    'textBackgroundColor': '',
+    'useNative':           true
   };
 
   test('constructor', function() {
@@ -63,7 +67,7 @@
   test('toString', function() {
     var text = createTextObject();
     ok(typeof text.toString == 'function');
-    equal(text.toString(), '#<fabric.Text (0): { "text": "x", "fontFamily": "Times New Roman" }>');
+    equal(text.toString(), '#<fabric.Text (1): { "text": "x", "fontFamily": "Times New Roman" }>');
   });
 
   test('toObject', function() {
@@ -75,6 +79,7 @@
   test('complexity', function(){
     var text = createTextObject();
     ok(typeof text.complexity == 'function');
+    equal(text.complexity(), 1);
   });
 
   test('set', function() {
@@ -94,9 +99,9 @@
 
     text.set({ opacity: 0.123, fill: 'red', fontFamily: 'blah' });
 
-    equal(0.123, text.getOpacity());
-    equal('red', text.getFill());
-    equal('blah', text.get('fontFamily'));
+    equal(text.getOpacity(), 0.123);
+    equal(text.getFill(), 'red');
+    equal(text.get('fontFamily'), 'blah');
   });
 
   test('setColor', function(){
@@ -162,9 +167,13 @@
     elTextWithAttrs.setAttribute('x', 10);
     elTextWithAttrs.setAttribute('y', 20);
     elTextWithAttrs.setAttribute('fill', 'rgb(255,255,255)');
-    elTextWithAttrs.setAttribute('fill-opacity', 0.45);
+    elTextWithAttrs.setAttribute('opacity', 0.45);
     elTextWithAttrs.setAttribute('stroke', 'blue');
     elTextWithAttrs.setAttribute('stroke-width', 3);
+    elTextWithAttrs.setAttribute('stroke-dasharray', '5, 2');
+    elTextWithAttrs.setAttribute('stroke-linecap', 'round');
+    elTextWithAttrs.setAttribute('stroke-linejoin', 'bevil');
+    elTextWithAttrs.setAttribute('stroke-miterlimit', 5);
     elTextWithAttrs.setAttribute('font-family', 'Monaco');
     elTextWithAttrs.setAttribute('font-style', 'italic');
     elTextWithAttrs.setAttribute('font-weight', 'bold');
@@ -179,19 +188,23 @@
 
     var expectedObject = fabric.util.object.extend(fabric.util.object.clone(REFERENCE_TEXT_OBJECT), {
       /* left varies slightly due to node-canvas rendering */
-      left: fabric.util.toFixed(textWithAttrs.left + '', 2),
-      top: -59.95,
-      width: 20,
-      height: 159.9,
-      fill: 'rgb(255,255,255)',
-      opacity: 0.45,
-      stroke: 'blue',
-      strokeWidth: 3,
-      fontFamily: 'Monaco',
-      fontStyle: 'italic',
-      fontWeight: 'bold',
-      fontSize: 123,
-      textDecoration: 'underline'
+      left:             fabric.util.toFixed(textWithAttrs.left + '', 2),
+      top:              -59.95,
+      width:            20,
+      height:           159.9,
+      fill:             'rgb(255,255,255)',
+      opacity:          0.45,
+      stroke:           'blue',
+      strokeWidth:      3,
+      strokeDashArray:  [5, 2],
+      strokeLineCap:    'round',
+      strokeLineJoin:   'bevil',
+      strokeMiterLimit: 5,
+      fontFamily:       'Monaco',
+      fontStyle:        'italic',
+      fontWeight:       'bold',
+      fontSize:         123,
+      textDecoration:   'underline'
     });
 
     deepEqual(textWithAttrs.toObject(), expectedObject);
@@ -203,10 +216,10 @@
 
   test('dimensions after text change', function() {
     var text = new fabric.Text('x');
-    equal(20, text.width);
+    equal(text.width, 20);
 
     text.setText('xx');
-    equal(40, text.width);
+    equal(text.width, 40);
   });
 
   test('setting fontFamily', function() {
@@ -214,7 +227,7 @@
     text.path = 'foobar.js';
 
     text.set('fontFamily', 'foobar');
-    equal('foobar', text.get('fontFamily'));
+    equal(text.get('fontFamily'), 'foobar');
   });
 
 })();

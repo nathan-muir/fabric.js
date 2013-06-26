@@ -8,33 +8,37 @@
   }
 
   var REFERENCE_OBJECT = {
-    'type':         'polygon',
-    'originX':      'center',
-    'originY':      'center',
-    'left':         0,
-    'top':          0,
-    'width':        10,
-    'height':       10,
-    'fill':         'rgb(0,0,0)',
-    'overlayFill':  null,
-    'stroke':       null,
-    'strokeWidth':  1,
-    'strokeDashArray': null,
-    'scaleX':       1,
-    'scaleY':       1,
-    'angle':        0,
-    'flipX':        false,
-    'flipY':        false,
-    'opacity':      1,
-    'points':       getPoints(),
-    'selectable':   true,
-    'hasControls':  true,
-    'hasBorders':   true,
-    'hasRotatingPoint': true,
+    'type':               'polygon',
+    'originX':            'center',
+    'originY':            'center',
+    'left':               0,
+    'top':                0,
+    'width':              10,
+    'height':             10,
+    'fill':               'rgb(0,0,0)',
+    'overlayFill':        null,
+    'stroke':             null,
+    'strokeWidth':        1,
+    'strokeDashArray':    null,
+    'strokeLineCap':      'butt',
+    'strokeLineJoin':     'miter',
+    'strokeMiterLimit':   10,
+    'scaleX':             1,
+    'scaleY':             1,
+    'angle':              0,
+    'flipX':              false,
+    'flipY':              false,
+    'opacity':            1,
+    'points':             getPoints(),
+    'selectable':         true,
+    'hasControls':        true,
+    'hasBorders':         true,
+    'hasRotatingPoint':   true,
     'transparentCorners': true,
     'perPixelTargetFind': false,
-    'shadow': null,
-    'visible': true
+    'shadow':             null,
+    'visible':            true,
+    'clipTo':             null
   };
 
   QUnit.module('fabric.Polygon');
@@ -48,7 +52,7 @@
     ok(polygon instanceof fabric.Object);
 
     equal(polygon.type, 'polygon');
-    deepEqual([ { x: 5, y: 7 }, { x: 15, y: 17 } ], polygon.get('points'));
+    deepEqual(polygon.get('points'), [ { x: -5, y: -5 }, { x: 5, y: 5 } ]);
   });
 
   test('complexity', function() {
@@ -71,7 +75,7 @@
     ok(typeof fabric.Polygon.fromObject == 'function');
     var polygon = fabric.Polygon.fromObject(REFERENCE_OBJECT);
     ok(polygon instanceof fabric.Polygon);
-    deepEqual(REFERENCE_OBJECT, polygon.toObject());
+    deepEqual(polygon.toObject(), REFERENCE_OBJECT);
   });
 
   test('fromElement', function() {
@@ -90,15 +94,19 @@
         points: [ { x: 10, y: 12 }, { x: 20, y: 22 } ]
       });
 
-    deepEqual(expected, polygon.toObject());
+    deepEqual(polygon.toObject(), expected);
 
     var elPolygonWithAttrs = fabric.document.createElement('polygon');
     elPolygonWithAttrs.setAttribute('points', '10,10 20,20 30,30 10,10');
     elPolygonWithAttrs.setAttribute('fill', 'rgb(255,255,255)');
-    elPolygonWithAttrs.setAttribute('fill-opacity', '0.34');
+    elPolygonWithAttrs.setAttribute('opacity', '0.34');
     elPolygonWithAttrs.setAttribute('stroke-width', '3');
     elPolygonWithAttrs.setAttribute('stroke', 'blue');
     elPolygonWithAttrs.setAttribute('transform', 'translate(-10,-20) scale(2)');
+    elPolygonWithAttrs.setAttribute('stroke-dasharray', '5, 2');
+    elPolygonWithAttrs.setAttribute('stroke-linecap', 'round');
+    elPolygonWithAttrs.setAttribute('stroke-linejoin', 'bevil');
+    elPolygonWithAttrs.setAttribute('stroke-miterlimit', '5');
 
     var polygonWithAttrs = fabric.Polygon.fromElement(elPolygonWithAttrs);
     var expectedPoints = [
@@ -108,17 +116,21 @@
       { x: 10, y: 10 }
     ];
 
-    deepEqual(fabric.util.object.extend(REFERENCE_OBJECT, {
-      'width': 20,
-      'height': 20,
-      'fill': 'rgb(255,255,255)',
-      'stroke': 'blue',
-      'strokeWidth': 3,
-      'opacity': 0.34,
-      'points': expectedPoints
-    }), polygonWithAttrs.toObject());
+    deepEqual(polygonWithAttrs.toObject(), fabric.util.object.extend(REFERENCE_OBJECT, {
+      'width':            20,
+      'height':           20,
+      'fill':             'rgb(255,255,255)',
+      'stroke':           'blue',
+      'strokeWidth':      3,
+      'strokeDashArray':  [5, 2],
+      'strokeLineCap':    'round',
+      'strokeLineJoin':   'bevil',
+      'strokeMiterLimit': 5,
+      'opacity':          0.34,
+      'points':           expectedPoints
+    }));
 
-    deepEqual([ 2, 0, 0, 2, -10, -20 ], polygonWithAttrs.get('transformMatrix'));
+    deepEqual(polygonWithAttrs.get('transformMatrix'), [ 2, 0, 0, 2, -10, -20 ]);
 
     var elPolygonWithoutPoints = fabric.document.createElement('polygon');
 

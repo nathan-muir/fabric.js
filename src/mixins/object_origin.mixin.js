@@ -15,17 +15,17 @@
       var cx = point.x, cy = point.y;
 
       if ( originX === "left" ) {
-        cx = point.x + this.getWidth() / 2;
+        cx = point.x + ( this.getWidth() + (this.strokeWidth*this.scaleX) )/ 2;
       }
       else if ( originX === "right" ) {
-        cx = point.x - this.getWidth() / 2;
+        cx = point.x - ( this.getWidth() + (this.strokeWidth*this.scaleX) ) / 2;
       }
 
       if ( originY === "top" ) {
-        cy = point.y + this.getHeight() / 2;
+        cy = point.y +( this.getHeight() + (this.strokeWidth*this.scaleY) ) / 2;
       }
       else if ( originY === "bottom" ) {
-        cy = point.y - this.getHeight() / 2;
+        cy = point.y - ( this.getHeight() + (this.strokeWidth*this.scaleY) )  / 2;
       }
 
       // Apply the reverse rotation to the point (it's already scaled properly)
@@ -44,16 +44,16 @@
 
       // Get the point coordinates
       if ( originX === "left" ) {
-        x = center.x - this.getWidth() / 2;
+        x = center.x - ( this.getWidth() + (this.strokeWidth*this.scaleX) ) / 2;
       }
       else if ( originX === "right" ) {
-        x = center.x + this.getWidth() / 2;
+        x = center.x + ( this.getWidth() + (this.strokeWidth*this.scaleX) ) / 2;
       }
       if ( originY === "top" ) {
-        y = center.y - this.getHeight() / 2;
+        y = center.y - ( this.getHeight() + (this.strokeWidth*this.scaleY) )/ 2;
       }
       else if ( originY === "bottom" ) {
-        y = center.y + this.getHeight() / 2;
+        y = center.y + ( this.getHeight() + (this.strokeWidth*this.scaleY) )/ 2;
       }
 
       // Apply the rotation to the point (it's already scaled properly)
@@ -101,20 +101,20 @@
       var x, y;
       if (originX !== undefined && originY !== undefined) {
         if ( originX === "left" ) {
-          x = center.x - this.getWidth() / 2;
+          x = center.x - (this.getWidth() + this.strokeWidth*this.scaleX) / 2;
         }
         else if ( originX === "right" ) {
-          x = center.x + this.getWidth() / 2;
+          x = center.x + (this.getWidth() + this.strokeWidth*this.scaleX)/ 2;
         }
         else {
           x = center.x;
         }
 
         if ( originY === "top" ) {
-          y = center.y - this.getHeight() / 2;
+          y = center.y - (this.getHeight() + this.strokeWidth*this.scaleY) / 2;
         }
         else if ( originY === "bottom" ) {
-          y = center.y + this.getHeight() / 2;
+          y = center.y + (this.getHeight() + this.strokeWidth*this.scaleY)/ 2;
         }
         else {
           y = center.y;
@@ -159,26 +159,32 @@
       var angle = degreesToRadians(this.angle);
       var hypotHalf = this.getWidth() / 2;
       var xHalf = Math.cos(angle) * hypotHalf;
+      var yHalf = Math.sin(angle) * hypotHalf;
       var hypotFull = this.getWidth();
       var xFull = Math.cos(angle) * hypotFull;
+      var yFull = Math.sin(angle) * hypotFull;
 
       if (this.originX === 'center' && to === 'left' ||
           this.originX === 'right' && to === 'center') {
         // move half left
         this.left -= xHalf;
+        this.top -= yHalf;
       }
       else if (this.originX === 'left' && to === 'center' ||
                this.originX === 'center' && to === 'right') {
         // move half right
         this.left += xHalf;
+        this.top += yHalf;
       }
       else if (this.originX === 'left' && to === 'right') {
         // move full right
         this.left += xFull;
+        this.top += yFull;
       }
       else if (this.originX === 'right' && to === 'left') {
         // move full left
         this.left -= xFull;
+        this.top -= yFull;
       }
 
       this.setCoords();
