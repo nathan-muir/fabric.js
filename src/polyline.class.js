@@ -32,11 +32,24 @@
      */
     initialize: function(points, options, skipOffset) {
       options = options || { };
-      this.set('points', points);
-      this.callSuper('initialize', options);
-      this._calcDimensions(skipOffset);
-    },
 
+      this.callSuper('initialize', options);
+      this.points = points;
+      this._calcDimensions(skipOffset);
+      this.setCoords();
+    },
+    /**
+     * @private
+     * @param {String} key
+     * @param {Any} value
+     */
+    _set: function(key, value) {
+      this[key] = value;
+      if (key == "points") {
+        this._calcDimensions(false);
+      }
+      return this;
+    },
     /**
      * @private
      * @param {Boolean} skipOffset Whether points offsetting should be skipped
