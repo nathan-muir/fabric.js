@@ -55,7 +55,7 @@ fabric.Collection = {
       this._onObjectRemoved(object);
     }
 
-    this.renderAll && this.renderAll();
+    this.renderOnRemoval && this.renderAll && this.renderAll();
     return object;
   },
 

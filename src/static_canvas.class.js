@@ -105,6 +105,14 @@
     renderOnAddition: true,
 
     /**
+     * Indicates whether {@link fabric.Canvas.prototype.remove} should also re-render canvas.
+     * Disabling this option could give a great performance boost when removing a lot of objects to canvas at once
+     * (followed by a manual rendering after removal)
+     * @type Boolean
+     */
+    renderOnRemoval: true,
+
+    /**
      * Function that determines clipping of entire canvas area
      * Being passed context as first argument. See clipping canvas area in {@link https://github.com/kangax/fabric.js/wiki/FAQ}
      * @type Function
