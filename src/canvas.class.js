@@ -124,7 +124,7 @@
      * When true, object detection happens on per-pixel basis rather than on per-bounding-box
      * @type Boolean
      */
-    perPixelTargetFind:     false,
+    perPixelTargetFind:     true,
 
     /**
      * Number of pixels around target pixel to tolerate (consider active) during object detection
@@ -728,7 +728,7 @@
       var possibleTargets = [];
       for (var i = this._objects.length; i--; ) {
         if (this._objects[i] && this._objects[i].visible && this.containsPoint(e, this._objects[i])) {
-          if (this.perPixelTargetFind || this._objects[i].perPixelTargetFind) {
+          if (this.perPixelTargetFind && this._objects[i].perPixelTargetFind) {
             possibleTargets[possibleTargets.length] = this._objects[i];
           }
           else {

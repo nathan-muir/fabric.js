@@ -294,7 +294,7 @@
      * @type Boolean
      * @default
      */
-    perPixelTargetFind:       false,
+    perPixelTargetFind:       true,
 
     /**
      * When `false`, default object's values are not included in its serialization
