@@ -75,14 +75,14 @@
       this.minY = minY;
 
       if (skipOffset) return;
-      // NATHAN - fixme this.left = (width /2) + minX, this.top = (height/2)+minY
-      var halfWidth = this.width / 2 + this.minX,
-          halfHeight = this.height / 2 + this.minY;
+
+      this.left = this.width / 2 + this.minX;
+      this.top = this.height / 2 + this.minY;
 
       // change points to offset polygon into a bounding box
       this.points.forEach(function(p) {
-        p.x -= halfWidth;
-        p.y -= halfHeight;
+        p.x -= this.left;
+        p.y -= this.top;
       }, this);
     },
 
