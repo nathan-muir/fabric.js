@@ -228,9 +228,9 @@
 
       this._renderTextBackground(ctx, textLines);
 
-      if (this.textAlign !== 'left' && this.textAlign !== 'justify') {
+      if (this.textAlign !== 'center' && this.textAlign !== 'justify') {
         ctx.save();
-        ctx.translate(this.textAlign === 'center' ? (this.width / 2) : this.width, 0);
+        ctx.translate(this.textAlign === 'left' ? (this.width / 2) : -(this.width / 2), 0);
       }
 
       ctx.save();
@@ -242,7 +242,7 @@
       this.textShadow && ctx.restore();
       ctx.restore();
 
-      if (this.textAlign !== 'left' && this.textAlign !== 'justify') {
+      if (this.textAlign !== 'center' && this.textAlign !== 'justify') {
         ctx.restore();
       }
 
