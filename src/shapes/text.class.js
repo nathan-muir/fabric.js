@@ -146,6 +146,30 @@
      */
      useNative:           true,
 
+    /**
+     * Padding on top of text - used for coloring background area
+     * @type Number
+     * @default
+     */
+    paddingTop: 0,
+    /**
+     * Padding on top of text - used for coloring background area
+     * @type Number
+     * @default
+     */
+    paddingBottom: 0,
+    /**
+     * Padding on top of text - used for coloring background area
+     * @type Number
+     * @default
+     */
+    paddingLeft: 0,
+    /**
+     * Padding on top of text - used for coloring background area
+     * @type Number
+     * @default
+     */
+    paddingRight: 0,
      /**
       * List of properties to consider when checking if state of an object is changed ({@link fabric.Object#hasStateChanged})
       * as well as for history (undo/redo) purposes
@@ -228,9 +252,9 @@
 
       this._renderTextBackground(ctx, textLines);
 
-      if (this.textAlign !== 'center' && this.textAlign !== 'justify') {
+      if (this.textAlign !== 'left' && this.textAlign !== 'justify') {
         ctx.save();
-        ctx.translate(this.textAlign === 'left' ? (this.width / 2) : -(this.width / 2), 0);
+        ctx.translate(this.textAlign === 'center' ? (this.width / 2) : this.width, 0);
       }
 
       ctx.save();
@@ -242,7 +266,7 @@
       this.textShadow && ctx.restore();
       ctx.restore();
 
-      if (this.textAlign !== 'center' && this.textAlign !== 'justify') {
+      if (this.textAlign !== 'left' && this.textAlign !== 'justify') {
         ctx.restore();
       }
 
@@ -501,10 +525,10 @@
       ctx.fillStyle = this.backgroundColor;
 
       ctx.fillRect(
-        this._getLeftOffset(),
-        this._getTopOffset(),
-        this.width,
-        this.height
+        this._getLeftOffset() - this.paddingLeft,
+        this._getTopOffset() - this.paddingTop,
+        this.width  + this.paddingLeft + this.paddingRight,
+        this.height + this.paddingTop + this.paddingRight
       );
 
       ctx.restore();
