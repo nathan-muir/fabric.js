@@ -298,21 +298,23 @@
         // what part of the pictures we are hovering to change the caret symbol.
         // We won't do that while dragging or rotating in order to improve the
         // performance.
-        target = this.findTarget(e);
+        var self = this;
 
-        if (!target || target && !target.selectable) {
-          // image/text was hovered-out from, we remove its borders
-          for (var i = this._objects.length; i--; ) {
-            if (this._objects[i] && !this._objects[i].active) {
-              this._objects[i].set('active', false);
+        style.cursor = this.defaultCursor;
+
+        this.findTargetAsync(e, null, function(target){
+          if (!target || target && !target.selectable) {
+            // image/text was hovered-out from, we remove its borders
+            for (var i = self._objects.length; i--; ) {
+              if (self._objects[i] && !self._objects[i].active) {
+                self._objects[i].set('active', false);
+              }
             }
+            style.cursor = self.defaultCursor;
+          } else {
+            self._setCursorFromEvent(e, target);
           }
-          style.cursor = this.defaultCursor;
-        }
-        else {
-          // set proper cursor
-          this._setCursorFromEvent(e, target);
-        }
+        });
       }
       else {
         // object is being transformed (scaled/rotated/moved/etc.)

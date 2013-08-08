@@ -750,7 +750,12 @@
 
       return target;
     },
-
+    findTargetAsync: function(e, skipGroup, callback){
+      var self = this;
+      fabric.window.setTimeout(function(){
+        callback(self.findTarget(e,skipGroup))
+      },1);
+    },
     /**
      * Returns pointer coordinates relative to canvas.
      * @param {Event} e
