@@ -25,7 +25,8 @@
     this._initStatic(el, options);
     this._initInteractive();
     this._createCacheCanvas();
-
+    this.layers = {};
+    this.contexts = {};
     fabric.Canvas.activeInstance = this;
   };
 
@@ -139,7 +140,6 @@
       this._currentTransform = null;
       this._groupSelector = null;
       this._initWrapperElement();
-      this._createUpperCanvas();
       this._initEvents();
 
       this.freeDrawingBrush = fabric.PencilBrush && new fabric.PencilBrush(this);
@@ -303,7 +303,7 @@
 
       var action = 'drag',
           corner,
-          pointer = getPointer(e, target.canvas.upperCanvasEl);
+          pointer = getPointer(e, target.canvas.lowerCanvasEl);
 
       corner = target._findTargetCorner(e, this._offset);
       if (corner) {
@@ -593,7 +593,7 @@
      * @private
      */
     _setCursor: function (value) {
-      this.upperCanvasEl.style.cursor = value;
+      this.lowerCanvasEl.style.cursor = value;
     },
 
     /**
@@ -609,7 +609,7 @@
      * @private
      */
     _drawSelection: function () {
-      var ctx = this.contextTop,
+      var ctx = this.lowerCanvasEl,
           groupSelector = this._groupSelector,
           left = groupSelector.left,
           top = groupSelector.top,
@@ -693,7 +693,7 @@
         this.setActiveGroup(group);
         group.saveCoords();
         this.fire('selection:created', { target: group });
-        this.renderAll();
+        /*this.renderAll();*/
       }
     },
 
@@ -762,7 +762,7 @@
      * @return {Object} object with "x" and "y" number values
      */
     getPointer: function (e) {
-      var pointer = getPointer(e, this.upperCanvasEl);
+      var pointer = getPointer(e, this.lowerCanvasEl);
       return {
         x: pointer.x - this._offset.left,
         y: pointer.y - this._offset.top
@@ -770,21 +770,27 @@
     },
 
     /**
-     * @private
-     * @param {HTMLElement|String} canvasEl Canvas element
+     * @param {String} name
      * @throws {CANVAS_INIT_ERROR} If canvas can not be initialized
      */
-    _createUpperCanvas: function () {
-      var lowerCanvasClass = this.lowerCanvasEl.className.replace(/\s*lower-canvas\s*/, '');
+    createLayer: function (name) {
+      var lowerCanvasClass = this.lowerCanvasEl.className.replace(/\s*lower-canvas\s*/, ''),
+          newLayer;
 
-      this.upperCanvasEl = this._createCanvasElement();
-      fabric.util.addClass(this.upperCanvasEl, 'upper-canvas ' + lowerCanvasClass);
+      if (name in this.layers){
+        throw new Error("Layer already exists")
+      }
 
-      this.wrapperEl.appendChild(this.upperCanvasEl);
+      newLayer = this._createCanvasElement();
+      fabric.util.addClass(newLayer, name + lowerCanvasClass);
 
-      this._copyCanvasStyle(this.lowerCanvasEl, this.upperCanvasEl);
-      this._applyCanvasStyle(this.upperCanvasEl);
-      this.contextTop = this.upperCanvasEl.getContext('2d');
+      this.wrapperEl.appendChild(newLayer);
+
+      this._copyCanvasStyle(this.lowerCanvasEl, newLayer);
+      this._applyCanvasStyle(newLayer);
+
+      this.layers[name] = newLayer;
+      this.contexts[name] = newLayer.getContext('2d');
     },
 
     /**
@@ -846,18 +852,20 @@
 
     /**
      * Returns context of canvas where object selection is drawn
+     * @param {String} name layer
      * @return {CanvasRenderingContext2D}
      */
-    getSelectionContext: function() {
-      return this.contextTop;
+    getLayerContext: function(name) {
+      return this.contexts[name];
     },
 
     /**
      * Returns &lt;canvas> element on which object selection is drawn
+     * @param {String} name layer
      * @return {HTMLCanvasElement}
      */
-    getSelectionElement: function () {
-      return this.upperCanvasEl;
+    getLayerElement: function (name) {
+      return this.layers[name];
     },
 
     /**
@@ -873,7 +881,7 @@
       this._activeObject = object;
       object.set('active', true);
 
-      this.renderAll();
+      /*this.renderAll();*/
 
       this.fire('object:selected', { target: object, e: e });
       object.fire('selected', { e: e });

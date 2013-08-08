@@ -138,7 +138,8 @@
       */
     _initStatic: function(el, options) {
       this._objects = [];
-
+      this.renderMain = false;
+      this.renderLayers = {};
       this._createLowerCanvas(el);
       this._initOptions(options);
 
@@ -357,12 +358,15 @@
      * @chainable true
      */
     _setDimension: function (prop, value) {
+      var layerName;
       this.lowerCanvasEl[prop] = value;
       this.lowerCanvasEl.style[prop] = value + 'px';
 
-      if (this.upperCanvasEl) {
-        this.upperCanvasEl[prop] = value;
-        this.upperCanvasEl.style[prop] = value + 'px';
+      if(this.layers){
+        for(layerName in this.layers){
+          this.layers[layerName][prop] = value;
+          this.layers[layerName].style[prop] = value + 'px';
+        }
       }
 
       if (this.cacheCanvasEl) {
@@ -376,7 +380,7 @@
       this[prop] = value;
 
       this.calcOffset();
-      this.renderAll();
+      /*this.renderAll();*/
 
       return this;
     },
@@ -478,6 +482,7 @@
      * @chainable
      */
     clear: function () {
+      var layerName;
       this._objects.length = 0;
       if (this.discardActiveGroup) {
         this.discardActiveGroup();
@@ -486,21 +491,75 @@
         this.discardActiveObject();
       }
       this.clearContext(this.contextContainer);
-      if (this.contextTop) {
-        this.clearContext(this.contextTop);
+
+      if (this.contexts){
+        for(layerName in this.contexts){
+          this.clearContext(this.contexts[layerName]);
+        }
       }
       this.fire('canvas:cleared');
-      this.renderAll();
+      /*this.renderAll();*/
       return this;
     },
 
+
+    doRender: function(){
+      var renderMain = this.renderMain,
+          renderLayers = this.renderLayers,
+          layerName,
+          i, I, item;
+
+      this.renderMain = false;
+      this.renderLayers = {};
+      console.log('doRender', renderMain, renderLayers);
+
+      if(renderMain){
+        this.clearContext(this.contextContainer);
+      }
+
+      for(layerName in renderLayers){
+         this.clearContext(this.contexts[layerName]);
+      }
+
+      this.fire('before:render');
+      for (i = 0, I = this._objects.length; i < I; i++) {
+        item = this._objects[i];
+        if (item) {
+          if (typeof item.layer == "undefined"){
+            if (renderMain){
+              this._draw(this.contextContainer, item);
+            }
+          } else if (typeof renderLayers[item.layer] != "undefined") {
+            this._draw(this.contexts[item.layer], item);
+          }
+        }
+      }
+      this.fire('after:render');
+
+    },
+    renderAll: function(layerName){
+      var ln;
+      console.log('renderAll', arguments);
+      if (arguments.length === 0){
+        this.renderMain = true;
+        for (ln in this.layers){
+          this.renderLayers[ln] = true
+        }
+      } else if (layerName == null){
+        this.renderMain = true
+      } else if (this.layers && layerName in this.layers){
+        this.renderLayers[layerName] = true
+      }
+      this.doRender()
+
+    },
     /**
      * Renders both the top canvas and the secondary container canvas.
-     * @param allOnTop {Boolean} optional Whether we want to force all images to be rendered on the top canvas
+     *
      * @return {fabric.Canvas} instance
      * @chainable
      */
-    renderAll: function (allOnTop) {
+ /*   renderAll: function () {
 
       var canvasToDrawOn = this[(allOnTop === true && this.interactive) ? 'contextTop' : 'contextContainer'];
 
@@ -571,7 +630,7 @@
 
       return this;
     },
-
+*/
     /**
      * @private
      */
@@ -638,7 +697,7 @@
      */
     centerObjectH: function (object) {
       object.set('left', this.getCenter().left);
-      this.renderAll();
+      /*this.renderAll();*/
       return this;
     },
 
@@ -650,7 +709,7 @@
      */
     centerObjectV: function (object) {
       object.set('top', this.getCenter().top);
-      this.renderAll();
+      /*this.renderAll();*/
       return this;
     },
 
@@ -844,7 +903,8 @@
     sendToBack: function (object) {
       removeFromArray(this._objects, object);
       this._objects.unshift(object);
-      return this.renderAll && this.renderAll();
+      return this;
+      /*return this.renderAll && this.renderAll();*/
     },
 
     /**
@@ -856,7 +916,8 @@
     bringToFront: function (object) {
       removeFromArray(this._objects, object);
       this._objects.push(object);
-      return this.renderAll && this.renderAll();
+      return this;
+      /*return this.renderAll && this.renderAll();*/
     },
 
     /**
@@ -887,7 +948,8 @@
         removeFromArray(this._objects, object);
         this._objects.splice(nextIntersectingIdx, 0, object);
       }
-      return this.renderAll && this.renderAll();
+      return this;
+      /*return this.renderAll && this.renderAll();*/
     },
 
     /**
@@ -920,7 +982,8 @@
         removeFromArray(objects, object);
         objects.splice(nextIntersectingIdx, 0, object);
       }
-      return this.renderAll && this.renderAll();
+      return this;
+      /*return this.renderAll && this.renderAll();*/
     },
 
     /**
@@ -933,7 +996,8 @@
     moveTo: function (object, index) {
       removeFromArray(this._objects, object);
       this._objects.splice(index, 0, object);
-      return this.renderAll && this.renderAll();
+      return this;
+      /*return this.renderAll && this.renderAll();*/
     },
 
     /**
@@ -947,15 +1011,15 @@
       if (!this.interactive) return this;
 
       if (fabric.isTouchSupported) {
-        removeListener(this.upperCanvasEl, 'touchstart', this._onMouseDown);
-        removeListener(this.upperCanvasEl, 'touchmove', this._onMouseMove);
+        removeListener(this.lowerCanvasEl, 'touchstart', this._onMouseDown);
+        removeListener(this.lowerCanvasEl, 'touchmove', this._onMouseMove);
         if (typeof Event !== 'undefined' && 'remove' in Event) {
-          Event.remove(this.upperCanvasEl, 'gesture', this._onGesture);
+          Event.remove(this.lowerCanvasEl, 'gesture', this._onGesture);
         }
       }
       else {
-        removeListener(this.upperCanvasEl, 'mousedown', this._onMouseDown);
-        removeListener(this.upperCanvasEl, 'mousemove', this._onMouseMove);
+        removeListener(this.lowerCanvasEl, 'mousedown', this._onMouseDown);
+        removeListener(this.lowerCanvasEl, 'mousemove', this._onMouseMove);
         removeListener(fabric.window, 'resize', this._onResize);
       }
       return this;

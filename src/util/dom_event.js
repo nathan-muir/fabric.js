@@ -171,9 +171,9 @@
    * Cross-browser wrapper for getting event's coordinates
    * @memberOf fabric.util
    * @param {Event} event
-   * @param {HTMLCanvasElement} upperCanvasEl &lt;canvas> element on which object selection is drawn
+   * @param {HTMLCanvasElement} lowerCanvasEl &lt;canvas> element on which object selection is drawn
    */
-  function getPointer(event, upperCanvasEl) {
+  function getPointer(event, lowerCanvasEl) {
     event || (event = fabric.window.event);
 
     var element = event.target || (typeof event.srcElement !== 'unknown' ? event.srcElement : null),
@@ -189,11 +189,11 @@
 
       if (element !== fabric.document && fabric.util.getElementStyle(element, 'position') === 'fixed') firstFixedAncestor = element;
 
-      if (element !== fabric.document && orgElement !== upperCanvasEl && fabric.util.getElementStyle(element, 'position') === 'absolute') {
+      if (element !== fabric.document && orgElement !== lowerCanvasEl && fabric.util.getElementStyle(element, 'position') === 'absolute') {
         scrollLeft = 0;
         scrollTop = 0;
       }
-      else if (element === fabric.document && orgElement !== upperCanvasEl) {
+      else if (element === fabric.document && orgElement !== lowerCanvasEl) {
         scrollLeft = body.scrollLeft || docElement.scrollLeft || 0;
         scrollTop = body.scrollTop ||  docElement.scrollTop || 0;
       }

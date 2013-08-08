@@ -3,6 +3,20 @@
  */
 fabric.Collection = {
 
+  addSilent: function(){
+    var item;
+    this._objects.push.apply(this._objects, arguments);
+    for (var i = arguments.length; i--; ) {
+      item = arguments[i];
+        if (typeof item.layer != "undefined" &&  item.layer in this.contexts){
+          this._draw(this.contexts[item.layer], item);
+        } else if (typeof renderLayers[item.layer] != "undefined") {
+          this._draw(this.contextContainer, item);
+        }
+      this._onObjectAdded(arguments[i]);
+    }
+    return this;
+  },
   /**
    * Adds objects to collection, then renders canvas (if `renderOnAddition` is not `false`)
    * Objects should be instances of (or inherit from) fabric.Object
@@ -14,7 +28,7 @@ fabric.Collection = {
     for (var i = arguments.length; i--; ) {
       this._onObjectAdded(arguments[i]);
     }
-    this.renderOnAddition && this.renderAll();
+    /*this.renderOnAddition && this.renderAll();*/
     return this;
   },
 
@@ -35,7 +49,7 @@ fabric.Collection = {
       objects.splice(index, 0, object);
     }
     this._onObjectAdded(object);
-    this.renderOnAddition && this.renderAll();
+    /*this.renderOnAddition && this.renderAll();*/
     return this;
   },
 
@@ -55,7 +69,7 @@ fabric.Collection = {
       this._onObjectRemoved(object);
     }
 
-    this.renderOnRemoval && this.renderAll && this.renderAll();
+    /*this.renderOnRemoval && this.renderAll && this.renderAll();*/
     return object;
   },
 

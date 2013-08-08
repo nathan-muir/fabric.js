@@ -181,16 +181,21 @@
     */
   function loadImage(url, callback, context) {
     if (url) {
-      var img = fabric.util.createImage();
-      /** @ignore */
-      img.onload = function () {
-        callback && callback.call(context, img);
-        img = img.onload = null;
-      };
-      img.src = url;
+      fabric.window.setTimeout(function(){
+        var img = fabric.util.createImage();
+        /** @ignore */
+        img.crossOrigin = "anonymous";
+        img.onload = function () {
+          callback && callback.call(context, img);
+          img.onload = null;
+        };
+        img.src = url;
+      },0)
     }
     else {
-      callback && callback.call(context, url);
+      fabric.window.setTimeout(function(){
+        callback && callback.call(context, url);
+      }, 0);
     }
   }
 

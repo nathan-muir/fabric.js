@@ -45,16 +45,16 @@
       addListener(fabric.window, 'resize', this._onResize);
 
       if (fabric.isTouchSupported) {
-        addListener(this.upperCanvasEl, 'touchstart', this._onMouseDown);
-        addListener(this.upperCanvasEl, 'touchmove', this._onMouseMove);
+        addListener(this.lowerCanvasEl, 'touchstart', this._onMouseDown);
+        addListener(this.lowerCanvasEl, 'touchmove', this._onMouseMove);
 
         if (typeof Event !== 'undefined' && 'add' in Event) {
-          Event.add(this.upperCanvasEl, 'gesture', this._onGesture);
+          Event.add(this.lowerCanvasEl, 'gesture', this._onGesture);
         }
       }
       else {
-        addListener(this.upperCanvasEl, 'mousedown', this._onMouseDown);
-        addListener(this.upperCanvasEl, 'mousemove', this._onMouseMove);
+        addListener(this.lowerCanvasEl, 'mousedown', this._onMouseDown);
+        addListener(this.lowerCanvasEl, 'mousemove', this._onMouseMove);
       }
     },
 
@@ -71,8 +71,8 @@
       !fabric.isTouchSupported && addListener(fabric.document, 'mousemove', this._onMouseMove);
       fabric.isTouchSupported && addListener(fabric.document, 'touchmove', this._onMouseMove);
 
-      !fabric.isTouchSupported && removeListener(this.upperCanvasEl, 'mousemove', this._onMouseMove);
-      fabric.isTouchSupported && removeListener(this.upperCanvasEl, 'touchmove', this._onMouseMove);
+      !fabric.isTouchSupported && removeListener(this.lowerCanvasEl, 'mousemove', this._onMouseMove);
+      fabric.isTouchSupported && removeListener(this.lowerCanvasEl, 'touchmove', this._onMouseMove);
     },
 
     /**
@@ -88,8 +88,8 @@
       !fabric.isTouchSupported && removeListener(fabric.document, 'mousemove', this._onMouseMove);
       fabric.isTouchSupported && removeListener(fabric.document, 'touchmove', this._onMouseMove);
 
-      !fabric.isTouchSupported && addListener(this.upperCanvasEl, 'mousemove', this._onMouseMove);
-      fabric.isTouchSupported && addListener(this.upperCanvasEl, 'touchmove', this._onMouseMove);
+      !fabric.isTouchSupported && addListener(this.lowerCanvasEl, 'mousemove', this._onMouseMove);
+      fabric.isTouchSupported && addListener(this.lowerCanvasEl, 'touchmove', this._onMouseMove);
     },
 
     /**
@@ -165,7 +165,7 @@
 
       // clear selection
       this._groupSelector = null;
-      this.renderAll();
+      /*this.renderAll();*/
 
       this._setCursorFromEvent(e, target);
 
@@ -200,7 +200,7 @@
       if (this.isDrawingMode) {
         pointer = this.getPointer(e);
         this._isCurrentlyDrawing = true;
-        this.discardActiveObject().renderAll();
+        this.discardActiveObject();/*.renderAll()*/
         this.freeDrawingBrush.onMouseDown(pointer);
         this.fire('mouse:down', { e: e });
         return;
@@ -242,7 +242,7 @@
         this._setupCurrentTransform(e, target);
       }
       // we must renderAll so that active image is placed on the top canvas
-      this.renderAll();
+      /*this.renderAll();*/
 
       this.fire('mouse:down', { target: target, e: e });
       target && target.fire('mousedown', { e: e });
@@ -274,7 +274,7 @@
           pointer = this.getPointer(e);
           this.freeDrawingBrush.onMouseMove(pointer);
         }
-        this.upperCanvasEl.style.cursor = this.freeDrawingCursor;
+        this.lowerCanvasEl.style.cursor = this.freeDrawingCursor;
         this.fire('mouse:move', { e: e });
         return;
       }
@@ -283,7 +283,7 @@
 
       // We initially clicked in an empty area, so we draw a box for multiple selection.
       if (groupSelector) {
-        pointer = getPointer(e, this.upperCanvasEl);
+        pointer = getPointer(e, this.lowerCanvasEl);
 
         groupSelector.left = pointer.x - this._offset.left - groupSelector.ex;
         groupSelector.top = pointer.y - this._offset.top - groupSelector.ey;
@@ -292,7 +292,7 @@
       else if (!this._currentTransform) {
 
         // alias style to elimintate unnecessary lookup
-        var style = this.upperCanvasEl.style;
+        var style = this.lowerCanvasEl.style;
 
         // Here we are hovering the canvas then we will determine
         // what part of the pictures we are hovering to change the caret symbol.
@@ -318,7 +318,7 @@
       }
       else {
         // object is being transformed (scaled/rotated/moved/etc.)
-        pointer = getPointer(e, this.upperCanvasEl);
+        pointer = getPointer(e, this.lowerCanvasEl);
 
         var x = pointer.x,
             y = pointer.y,
@@ -384,7 +384,7 @@
           this._setCursor(this.moveCursor);
         }
 
-        this.renderAll();
+        /*this.renderAll();*/
       }
       this.fire('mouse:move', { target: target, e: e });
       target && target.fire('mousemove', { e: e });
@@ -396,7 +396,7 @@
      * @param {Object} target Object that the mouse is hovering, if so.
      */
     _setCursorFromEvent: function (e, target) {
-      var s = this.upperCanvasEl.style;
+      var s = this.lowerCanvasEl.style;
       if (!target) {
         s.cursor = this.defaultCursor;
         return false;

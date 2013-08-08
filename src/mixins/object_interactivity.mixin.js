@@ -15,7 +15,7 @@
     _findTargetCorner: function(e, offset) {
       if (!this.hasControls || !this.active) return false;
 
-      var pointer = getPointer(e, this.canvas.upperCanvasEl),
+      var pointer = getPointer(e, this.canvas.lowerCanvasEl),
           ex = pointer.x - offset.left,
           ey = pointer.y - offset.top,
           xPoints,
@@ -35,17 +35,17 @@
 
         // debugging
 
-        // canvas.contextTop.fillRect(lines.bottomline.d.x, lines.bottomline.d.y, 2, 2);
-        // canvas.contextTop.fillRect(lines.bottomline.o.x, lines.bottomline.o.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.bottomline.d.x, lines.bottomline.d.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.bottomline.o.x, lines.bottomline.o.y, 2, 2);
 
-        // canvas.contextTop.fillRect(lines.leftline.d.x, lines.leftline.d.y, 2, 2);
-        // canvas.contextTop.fillRect(lines.leftline.o.x, lines.leftline.o.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.leftline.d.x, lines.leftline.d.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.leftline.o.x, lines.leftline.o.y, 2, 2);
 
-        // canvas.contextTop.fillRect(lines.topline.d.x, lines.topline.d.y, 2, 2);
-        // canvas.contextTop.fillRect(lines.topline.o.x, lines.topline.o.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.topline.d.x, lines.topline.d.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.topline.o.x, lines.topline.o.y, 2, 2);
 
-        // canvas.contextTop.fillRect(lines.rightline.d.x, lines.rightline.d.y, 2, 2);
-        // canvas.contextTop.fillRect(lines.rightline.o.x, lines.rightline.o.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.rightline.d.x, lines.rightline.d.y, 2, 2);
+        // canvas.contextContainer.fillRect(lines.rightline.o.x, lines.rightline.o.y, 2, 2);
 
         xPoints = this._findCrossPoints({x: ex, y: ey}, lines);
         if (xPoints !== 0 && xPoints % 2 === 1) {

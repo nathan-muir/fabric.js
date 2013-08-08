@@ -30,12 +30,10 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
    */
   __toDataURL: function(format, quality) {
     this.renderAll(true);
-    var canvasEl = this.upperCanvasEl || this.lowerCanvasEl;
     var data = (fabric.StaticCanvas.supports('toDataURLWithQuality'))
-              ? canvasEl.toDataURL('image/' + format, quality)
-              : canvasEl.toDataURL('image/' + format);
+              ? this.lowerCanvasEl.toDataURL('image/' + format, quality)
+              : this.lowerCanvasEl.toDataURL('image/' + format);
 
-    this.contextTop && this.clearContext(this.contextTop);
     this.renderAll();
     return data;
   },
@@ -50,12 +48,11 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
         scaledWidth = origWidth * multiplier,
         scaledHeight = origHeight * multiplier,
         activeObject = this.getActiveObject(),
-        activeGroup = this.getActiveGroup(),
+        activeGroup = this.getActiveGroup();
 
-        ctx = this.contextTop || this.contextContainer;
 
     this.setWidth(scaledWidth).setHeight(scaledHeight);
-    ctx.scale(multiplier, multiplier);
+    this.contextContainer.scale(multiplier, multiplier);
 
     if (activeGroup) {
       // not removing group due to complications with restoring it with correct state afterwords
@@ -74,7 +71,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
 
     var data = this.__toDataURL(format, quality);
 
-    ctx.scale(1 / multiplier,  1 / multiplier);
+    this.contextContainer.scale(1 / multiplier,  1 / multiplier);
     this.setWidth(origWidth).setHeight(origHeight);
 
     if (activeGroup) {
@@ -84,7 +81,6 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       this.setActiveObject(activeObject);
     }
 
-    this.contextTop && this.clearContext(this.contextTop);
     this.renderAll();
 
     return data;

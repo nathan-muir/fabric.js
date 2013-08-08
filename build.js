@@ -136,13 +136,6 @@ var filesToInclude = [
 
   'src/static_canvas.class.js',
 
-  ifSpecifiedInclude('freedrawing', 'src/brushes/base_brush.class.js'),
-
-  ifSpecifiedInclude('freedrawing', 'src/brushes/pencil_brush.class.js'),
-  ifSpecifiedInclude('freedrawing', 'src/brushes/circle_brush.class.js'),
-  ifSpecifiedInclude('freedrawing', 'src/brushes/spray_brush.class.js'),
-  ifSpecifiedInclude('freedrawing', 'src/brushes/pattern_brush.class.js'),
-
   ifSpecifiedInclude('interaction', 'src/canvas.class.js'),
   ifSpecifiedInclude('interaction', 'src/mixins/canvas_events.mixin.js'),
 
@@ -171,19 +164,6 @@ var filesToInclude = [
   'src/shapes/group.class.js',
   'src/shapes/image.class.js',
 
-  ifSpecifiedInclude('object_straightening', 'src/mixins/object_straightening.mixin.js'),
-
-  ifSpecifiedInclude('image_filters', 'src/filters/brightness_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/convolute_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/gradienttransparency_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/grayscale_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/invert_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/noise_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/pixelate_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/removewhite_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/sepia_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/sepia2_filter.class.js'),
-  ifSpecifiedInclude('image_filters', 'src/filters/tint_filter.class.js'),
 
   ifSpecifiedInclude('text', 'src/shapes/text.class.js'),
   ifSpecifiedInclude('cufon', 'src/shapes/text.cufon.js'),
