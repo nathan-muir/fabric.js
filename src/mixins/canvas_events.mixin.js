@@ -384,7 +384,7 @@
           this._setCursor(this.moveCursor);
         }
 
-        /*this.renderAll();*/
+        this.renderAll(target.layer);
       }
       this.fire('mouse:move', { target: target, e: e });
       target && target.fire('mousemove', { e: e });
