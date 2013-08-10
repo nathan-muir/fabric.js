@@ -27,3 +27,13 @@ fabric.isTouchSupported = "ontouchstart" in fabric.document.documentElement;
  * @type boolean
  */
 fabric.isLikelyNode = typeof Buffer !== 'undefined' && typeof window === 'undefined';
+
+
+fabric.window.requestAnimationFrame = fabric.window.requestAnimationFrame ||
+    fabric.window.webkitRequestAnimationFrame ||
+    fabric.window.mozRequestAnimationFrame ||
+    fabric.window.oRequestAnimationFrame ||
+    fabric.window.msRequestAnimationFrame ||
+    function (callback) {
+      fabric.window.setTimeout(callback, 1000 / 60);
+    };

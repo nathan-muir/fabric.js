@@ -421,10 +421,14 @@
      * Renders path on a specified context
      * @param {CanvasRenderingContext2D} ctx context to render path on
      * @param {Boolean} [noTransform] When true, context is not transformed
+     * @param {Number} width
+     * @param {Boolean} height
      */
-    render: function(ctx, noTransform) {
+    render: function(ctx, noTransform, width, height) {
       // do not render if object is not visible
       if (!this.visible) return;
+
+      if (width && height && (this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > width || this.top - this.height > height)) return;
 
       ctx.save();
       var m = this.transformMatrix;

@@ -30,6 +30,16 @@ fabric.isTouchSupported = "ontouchstart" in fabric.document.documentElement;
 fabric.isLikelyNode = typeof Buffer !== 'undefined' && typeof window === 'undefined';
 
 
+fabric.window.requestAnimationFrame = fabric.window.requestAnimationFrame ||
+    fabric.window.webkitRequestAnimationFrame ||
+    fabric.window.mozRequestAnimationFrame ||
+    fabric.window.oRequestAnimationFrame ||
+    fabric.window.msRequestAnimationFrame ||
+    function (callback) {
+      fabric.window.setTimeout(callback, 1000 / 60);
+    };
+
+
 /*!
  * Copyright (c) 2009 Simo Kinnunen.
  * Licensed under the MIT license.
@@ -5348,10 +5358,16 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       */
     _initStatic: function(el, options) {
       this._objects = [];
+
       this.renderMain = false;
+      this.blocking = true;
       this.renderLayers = {};
       this._createLowerCanvas(el);
       this._initOptions(options);
+
+      // for rendering via 'requestAnimationFrame'
+      this.rendering = false;
+      this.doRender = this.doRender.bind(this);
 
       if (options.overlayImage) {
         this.setOverlayImage(options.overlayImage, this.renderAll.bind(this));
@@ -5623,20 +5639,22 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * Given a context, renders an object on that context
      * @param ctx {Object} context to render object on
      * @param object {Object} object to render
+     * @param {Number} width document width
+     * @param {Number} height document height
      * @private
      */
-    _draw: function (ctx, object) {
+    _draw: function (ctx, object, width, height) {
       if (!object) return;
 
       if (this.controlsAboveOverlay) {
         var hasBorders = object.hasBorders, hasControls = object.hasControls;
         object.hasBorders = object.hasControls = false;
-        object.render(ctx);
+        object.render(ctx, false, width, height);
         object.hasBorders = hasBorders;
         object.hasControls = hasControls;
       }
       else {
-        object.render(ctx);
+        object.render(ctx, false, width, height);
       }
     },
 
@@ -5712,23 +5730,41 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       return this;
     },
 
+    setBlocking: function(block){
+      this.blocking = block;
+    },
 
     doRender: function(){
       var renderMain = this.renderMain,
           renderLayers = this.renderLayers,
           layerName,
-          i, I, item;
+          i, I, item, hasLayers = false;
+
+      if(this.blocking){
+        this.rendering = false;
+        return;
+      }
 
       this.renderMain = false;
       this.renderLayers = {};
-      console.log('doRender', renderMain, renderLayers);
+
+      if (!renderMain){
+        for(layerName in renderLayers){
+          hasLayers = true;
+          break;
+        }
+        if (!hasLayers){
+          this.rendering = false;
+          return;
+        }
+      }
 
       if(renderMain){
         this.clearContext(this.contextContainer);
       }
 
       for(layerName in renderLayers){
-         this.clearContext(this.contexts[layerName]);
+        this.clearContext(this.contexts[layerName]);
       }
 
       this.fire('before:render');
@@ -5737,19 +5773,19 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
         if (item) {
           if (typeof item.layer == "undefined"){
             if (renderMain){
-              this._draw(this.contextContainer, item);
+              this._draw(this.contextContainer, item, this.width, this.height);
             }
           } else if (typeof renderLayers[item.layer] != "undefined") {
-            this._draw(this.contexts[item.layer], item);
+            this._draw(this.contexts[item.layer], item, this.width, this.height);
           }
         }
       }
       this.fire('after:render');
 
+      fabric.window.requestAnimationFrame(this.doRender);
     },
     renderAll: function(layerName){
       var ln;
-      console.log('renderAll', arguments);
       if (arguments.length === 0){
         this.renderMain = true;
         for (ln in this.layers){
@@ -5760,8 +5796,11 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       } else if (this.layers && layerName in this.layers){
         this.renderLayers[layerName] = true
       }
-      this.doRender()
 
+      if (!this.blocking && !this.rendering){
+        this.rendering = true;
+        fabric.window.requestAnimationFrame(this.doRender);
+      }
     },
     /**
      * Renders both the top canvas and the secondary container canvas.
@@ -7755,7 +7794,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
           this._setCursor(this.moveCursor);
         }
 
-        /*this.renderAll();*/
+        this.renderAll(target.layer);
       }
       this.fire('mouse:move', { target: target, e: e });
       target && target.fire('mousemove', { e: e });
@@ -8734,9 +8773,11 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
      * @param {CanvasRenderingContext2D} ctx context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
      */
-    render: function(ctx, noTransform) {
+    render: function(ctx, noTransform, width, height) {
       // do not render if width/height are zeros or object is not visible
       if (this.width === 0 || this.height === 0 || !this.visible) return;
+
+      if (width && height && (this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > width || this.top - this.height > height)) return;
 
       ctx.save();
 
@@ -12184,10 +12225,14 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * Renders path on a specified context
      * @param {CanvasRenderingContext2D} ctx context to render path on
      * @param {Boolean} [noTransform] When true, context is not transformed
+     * @param {Number} width
+     * @param {Boolean} height
      */
-    render: function(ctx, noTransform) {
+    render: function(ctx, noTransform, width, height) {
       // do not render if object is not visible
       if (!this.visible) return;
+
+      if (width && height && (this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > width || this.top - this.height > height)) return;
 
       ctx.save();
       var m = this.transformMatrix;
