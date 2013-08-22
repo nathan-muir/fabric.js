@@ -2,13 +2,10 @@
 
   "use strict";
 
-  var extend = fabric.util.object.extend;
+  var fabric = global.fabric || (global.fabric = { }),
+      extend = fabric.util.object.extend;
 
-  if (!global.fabric) {
-    global.fabric = { };
-  }
-
-  if (global.fabric.Image) {
+  if (fabric.Image) {
     fabric.warn('fabric.Image is already defined.');
     return;
   }

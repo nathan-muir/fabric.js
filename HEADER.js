@@ -2,6 +2,8 @@
 
 fabric = { version: "1.2.0" };
 
+this.fabric = fabric;
+
 if (typeof exports !== 'undefined') {
   exports.fabric = fabric;
 }

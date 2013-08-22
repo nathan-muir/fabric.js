@@ -1,4 +1,4 @@
-(function() {
+(function(global) {
 
   QUnit.module('fabric.util');
 
@@ -745,4 +745,4 @@
       '\n if (1) { alert(12345) } ');
   });
 
-})();
+})( typeof exports !== 'undefined' ? exports : this );
