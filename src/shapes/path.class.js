@@ -422,7 +422,7 @@
      * @param {CanvasRenderingContext2D} ctx context to render path on
      * @param {Boolean} [noTransform] When true, context is not transformed
      * @param {Number} width
-     * @param {Boolean} height
+     * @param {Number} height
      */
     render: function(ctx, noTransform, width, height) {
       // do not render if object is not visible

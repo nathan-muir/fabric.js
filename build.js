@@ -163,6 +163,7 @@ var filesToInclude = [
   'src/shapes/path_group.class.js',
   'src/shapes/group.class.js',
   'src/shapes/image.class.js',
+  'src/shapes/staged_image.class.js',
 
 
   ifSpecifiedInclude('text', 'src/shapes/text.class.js'),
