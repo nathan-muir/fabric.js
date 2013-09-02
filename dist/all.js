@@ -14586,9 +14586,16 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         this.applyFilters();
       }
 
-      this.createStage = _.debounce(_.bind(this.createStage, this), 150);
+      this.createStage = _.debounce(_.bind(this.createStage, this), 200);
     },
 
+    updateDmax: function(){
+      if (typeof this.canvas === "undefined"){
+        this.staging.dMax = 2500;
+      } else {
+        this.staging.dMax = Math.ceil(Math.max(this.canvas.width, this.canvas.height) * 1.4);
+      }
+    },
     /**
      * Returns image element which this instance if based on
      * @return {HTMLImageElement} Image element
@@ -14972,6 +14979,8 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
     render: function(ctx, noTransform, width, height) {
       // do not render if object is not visible
       if (!this.visible) return;
+
+      this.updateDmax();
 
       if (this.staging.processing){
         // cancel processing?
