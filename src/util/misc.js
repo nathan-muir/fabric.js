@@ -200,6 +200,28 @@
   }
 
   /**
+    * Loads image element from given url and passes it to a callback
+    * @memberOf fabric.util
+    * @param {String} url URL representing an image
+    * @param {Function} callback Callback; invoked with loaded image
+    * @param {Any} context optional Context to invoke callback in
+    */
+  function loadScript(url, callback, context) {
+    fabric.window.setTimeout(function(){
+      var script = fabric.util.createScript(),
+        head = document.getElementsByTagName("head")[0] || document.documentElement;
+      script.onload = function () {
+        callback && callback.call(context, script);
+        script.onload = null;
+        if (head && script.parentNode){
+          head.removeChild(script);
+        }
+      };
+      script.src = url;
+      head.insertBefore( script, head.firstChild );
+    },0)
+  }
+  /**
    * Creates corresponding fabric instances from their object representations
    * @static
    * @memberOf fabric.util
@@ -364,7 +386,15 @@
       ? new (require('canvas').Image)()
       : fabric.document.createElement('img');
   }
-
+  /**
+   * Creates image element (works on client and node)
+   * @static
+   * @memberOf fabric.util
+   * @return {Image} image element
+   */
+  function createScript() {
+    return fabric.document.createElement('script');
+  }
   /**
    * Creates accessors (getXXX, setXXX) for a "class", based on "stateProperties" array
    * @static
@@ -577,12 +607,14 @@
   fabric.util.requestAnimFrame = requestAnimFrame;
   fabric.util.getKlass = getKlass;
   fabric.util.loadImage = loadImage;
+  fabric.util.loadScript = loadScript;
   fabric.util.enlivenObjects = enlivenObjects;
   fabric.util.groupSVGElements = groupSVGElements;
   fabric.util.populateWithProperties = populateWithProperties;
   fabric.util.drawDashedLine = drawDashedLine;
   fabric.util.createCanvasElement = createCanvasElement;
   fabric.util.createImage = createImage;
+  fabric.util.createScript = createScript;
   fabric.util.createAccessors = createAccessors;
   fabric.util.clipContext = clipContext;
   fabric.util.multiplyTransformMatrices = multiplyTransformMatrices;
