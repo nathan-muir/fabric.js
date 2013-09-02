@@ -14985,11 +14985,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       ctx.save();
       this.transform(ctx);
       ctx.beginPath();
-      if (this.staging.ready){
-        ctx.fillStyle = 'red';
-      } else {
-        ctx.fillStyle = 'white';
-      }
+      ctx.fillStyle = 'white';
       ctx.fillRect(
         -this.width / 2,
         -this.height / 2,
@@ -15002,18 +14998,6 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       if (!this.renderStage(ctx, width, height)){
         ctx.save();
         this.transform(ctx);
-        ctx.fillStyle = 'white';
-        if (this.staging.processing){
-          ctx.fillStyle = 'green';
-        }
-        ctx.beginPath();
-          ctx.fillRect(
-          -this.width / 2,
-          -this.height / 2,
-          this.width,
-          this.height
-        );
-        ctx.closePath();
         this._render(ctx);
         ctx.restore();
       }
