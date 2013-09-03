@@ -24,7 +24,7 @@ else if (minifier === 'closure') {
   mininfierCmd = 'java -jar lib/google_closure_compiler.jar --js dist/all.js --js_output_file dist/all.min.js';
 }
 else if (minifier === 'uglifyjs') {
-  mininfierCmd = 'uglifyjs --output dist/all.min.js dist/all.js';
+  mininfierCmd = './node_modules/uglify-js/bin/uglifyjs --output dist/all.min.js dist/all.js';
 }
 
 var noStrict = 'no-strict' in buildArgsAsObject;
