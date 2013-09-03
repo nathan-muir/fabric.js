@@ -36,8 +36,6 @@
       this.painter = painter;
       // create an auxillary canvas for rasterising the image
       this.auxCanvas = fabric.util.createCanvasElement();
-      //this.painter.renderImmediate(this.auxCanvas.getContext('2d'));
-      this.auxScale = 1; //TODO!!!
       this.auxCanvas.width = this.painter.plan.w;
       this.auxCanvas.height = this.painter.plan.h;
       this.painter.renderImmediately(this.auxCanvas.getContext('2d'));
@@ -45,11 +43,11 @@
       // create a 'stage' canvas for re-rasterising the image based on scale & top, left
       this.stagingCanvas = fabric.util.createCanvasElement();
       this.stagingCanvas.style.display = 'none';
-      //fabric.document.body.appendChild(this.stagingCanvas);
       this.staging = {
         ready: false, // whether there is anything on this canvas.
         processing: false,
         fullImage: false, // if the full image - ignore the bounding box
+        vbbox: null,
         bbox: { // bounding box as per the "source" image
           top: 0,
           left: 0,
@@ -120,20 +118,16 @@
       var bbox, scale;
       // can only render special stage if it's ready
       if (!this.staging.ready){
-        console.log("[fabric.StagedPainter::stageRender()] Staging not ready");
         return false;
       }
       // need to check that the scaleX & scaleY are equal
       if (this.scaleX !== this.scaleY){
-        //console.log("[fabric.StagedPainter::stageRender()] Cant render by stage if scales aren't equal ", this.scaleX, this.scaleY);
         return false;
       }
 
       scale = this.scaleX;
       // if the aux canvas' scale is closer to the current scale - use it
-      ////console.log(Math.abs(scale - this.staging.scale), Math.abs(scale - this.auxScale));
       if (Math.abs(scale - this.staging.scale) >= Math.abs(scale - this.auxScale)){
-        //console.log("[fabric.StagedPainter::stageRender()] Aux Image better scale match than staging image", scale, this.staging.scale);
         return false;
       }
 
@@ -141,7 +135,6 @@
         // make bounding box from top,left, scale, angle and width/height
         bbox = this.getViewportBbox(vWidth, vHeight);
         if (bbox.left < this.staging.bbox.left || this.staging.bbox.right < bbox.right || bbox.top < this.staging.bbox.top || this.staging.bbox.bottom < bbox.bottom){
-          //console.log('[fabric.StagedPainter::stageRender()] Staging area box outside ', bbox, this.staging.bbox);
           return false;
         }
 
@@ -188,24 +181,10 @@
         ctx.save();
         ctx.translate(this.left, this.top);
         ctx.rotate(fabric.util.degreesToRadians(this.angle));
-        ////console.log(this.scaleX * (this.flipX ? -1 : 1) / this.staging.scale, this.scaleY * (this.flipY ? -1 : 1) / this.staging.scale);
         ctx.scale(
           this.scaleX * (this.flipX ? -1 : 1) / this.staging.scale,
           this.scaleY * (this.flipY ? -1 : 1) / this.staging.scale
         );
-/*
-
-        ctx.beginPath();
-        ctx.fillStyle = '#ff0000';
-        ctx.rect(
-          -this.width * this.staging.scale / 2,
-          -this.height * this.staging.scale/ 2,
-          this.width * this.staging.scale,
-          this.height * this.staging.scale
-        );
-        ctx.fill();
-        ctx.closePath();
-*/
 
         ctx.drawImage(
           this.stagingCanvas,
@@ -220,7 +199,6 @@
     },
 
     rotate: function(x, y, cw) {
-      ////console.log('[StagedPainter::roate()] angle=' + this.angle);
       var d;
       if (cw == null) {
         cw = true;
@@ -291,13 +269,11 @@
       var bbox, dsWidth, dsHeight, ctx, dMax, scale, b, tbbox, _this = this;
 
       if (this.staging.processing){
-        console.log("[fabric.StagedPainter::createStage()] Cant call create stage while already processing!");
         return;
       }
 
       // request a stage for the current
       if (this.scaleX !== this.scaleY){
-        console.log("[fabric.StagedPainter::createStage()] Cant create a stage for the current viewport if scales aren't equal ", this.scaleX, this.scaleY);
         return;
       }
       scale = this.scaleX;
@@ -310,7 +286,6 @@
 
         if(this.staging.ready && this.staging.fullImage && this.staging.scale == scale){
           // already set -up
-          console.log("[fabric.StagedPainter::createStage()] fullImage stage already (being?) set up for current scale");
           return;
         }
 
@@ -335,29 +310,22 @@
         return;
       }
 
-      console.log("[fabric.StagedPainter::createStage()] Zoom level is too large! rendering a portion of the stage!");
-
       bbox = this.getViewportBbox(vWidth, vHeight);
       if ((bbox.right - bbox.left) > dMax || (bbox.bottom - bbox.top) > dMax){
-        //console.log("[fabric.StagedPainter::createStage()] Unable to create stage, bbox larger than dMax", bbox);
         return;
       }
 
       if (this.staging.ready && !this.staging.fullImage && this.staging.scale == scale){
         if (this.staging.bbox.left <= bbox.left && bbox.right <= this.staging.bbox.right && this.staging.bbox.top <= bbox.top &&  bbox.bottom <= this.staging.bbox.bottom){
-          console.log('[fabric.StagedPainter::createStage()] bounding box stage already (being?) set up for current scale', scale);
           return;
         }
       }
-      //console.log('[fabric.StagedPainter::createStage()] portion of document visible-', bbox);
       b = {
         x: bbox.left + (bbox.right - bbox.left)  /2,
         y: bbox.top + (bbox.bottom - bbox.top)  /2,
         width: Math.min(dMax, this.width),
         height: Math.min(dMax, this.height)
       };
-
-      //console.log("[fabric.StagedPainter::createStage()] Stage box - pre moving", b.x, b.y, b.width, b.height);
 
       if (b.x - b.width / 2 < 0){
         b.x = b.width / 2;
@@ -370,17 +338,14 @@
       } else if (b.y + b.height / 2 > this.height){
         b.y = this.height - b.height / 2;
       }
-      //console.log("[fabric.StagedPainter::createStage()] Stage box - post moving", b.x, b.y, b.width, b.height);
 
+      this.staging.vbbox = bbox;
       this.staging.bbox = {
         top: b.y - b.height / 2,
         left: b.x - b.width / 2,
         bottom: b.y + b.height / 2,
         right: b.x + b.width / 2
       };
-
-      console.log("[fabric.StagedPainter::createStage()] Creating Stage", b, this.staging.bbox);
-
 
       this.stagingCanvas.width = b.width * scale;
       this.stagingCanvas.height = b.height * scale;
@@ -399,33 +364,19 @@
         _this.staging.processing = false;
         _this.staging.ready = true;
         _this.canvas.renderAll(_this.layer);
-        console.log("[fabric.StagedPainter::createStage()] Creating Stage - Complete")
       });
 
-      /*
-      ctx.drawImage(
-        this.imageElement,
-        this.staging.bbox.left,
-        this.staging.bbox.top,
-        b.width,
-        b.height,
-        0, 0, b.width * scale, b.height * scale
-      );*/
-
-      return;
     },
 
      checkCreateStage: function(vWidth, vHeight){
-      var bbox, dsWidth, dsHeight, ctx, dMax, scale, b, tbbox, _this = this;
+      var vbbox, dsWidth, dsHeight, ctx, dMax, scale, b, tbbox, _this = this;
 
       if (!this.staging.processing){
-        console.log("[fabric.StagedPainter::checkCreateStage()] Cant call checkCreateStage while not processing");
         return;
       }
 
       // request a stage for the current
       if (this.scaleX !== this.scaleY){
-        console.log("[fabric.StagedPainter::checkCreateStage()] Cant create a stage for the current viewport if scales aren't equal ", this.scaleX, this.scaleY);
         return;
       }
       scale = this.scaleX;
@@ -435,26 +386,20 @@
       if (dsWidth <= this.staging.dMax && dsHeight <= this.staging.dMax){
         if(this.staging.fullImage && this.staging.scale == scale){
           // already set -up
-          console.log("[fabric.StagedPainter::checkCreateStage()] Processing for current scale - not cancelling");
           return;
         }
       } else {
-        bbox = this.getViewportBbox(vWidth, vHeight);
         if (!this.staging.fullImage && this.staging.scale == scale){
-          if (this.staging.bbox.left <= bbox.left && bbox.right <= this.staging.bbox.right && this.staging.bbox.top <= bbox.top &&  bbox.bottom <= this.staging.bbox.bottom){
-            console.log("[fabric.StagedPainter::checkCreateStage()] Processing for current scale && bounding box- not cancelling");
+          vbbox = this.getViewportBbox(vWidth, vHeight);
+          if (this.staging.vbbox.left == vbbox.left && this.staging.vbbox.right == vbbox.right && this.staging.vbbox.top == vbbox.top &&  this.staging.vbbox.bottom == vbbox.bottom){
             return;
           }
         }
       }
-      console.log('painter.renderCtx.stack-after', this.painter.renderCtx.stack);
-      console.log("[fabric.StagedPainter::checkCreateStage()] Cancelling stage creation");
       ctx = this.stagingCanvas.getContext('2d');
       this.painter.cancel(ctx);
       this.staging.ready = false;
       this.staging.processing = false;
-      console.log('painter.renderCtx.stack-after', this.painter.renderCtx.stack);
-      return;
     },
     /**
      * Renders image on a specified context
