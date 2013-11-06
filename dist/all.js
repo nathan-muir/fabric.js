@@ -15552,14 +15552,17 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
 
       this.staging.renderTask.then(
-          function(arg){
-            console.log("page render complete", arg);
-            _this.staging.processing = false;
-            _this.staging.ready = true;
-            _this.canvas.renderAll(_this.layer);
+          function(){
+            if (_this.stage != null){
+              _this.staging.processing = false;
+              _this.staging.ready = true;
+              _this.canvas.renderAll(_this.layer);
+            }
           },
           function(msg){
-            console.log("page render error:", msg);
+            _this.staging.processing = false;
+            _this.staging.ready = false;
+            _this.stage = null;
           }
       );
 
@@ -15609,11 +15612,12 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       this.staging.scale = scale;
 
       viewport = new PDFJS.PageViewport(
-          [this.staging.bbox.left, this.staging.bbox.top, this.staging.bbox.right, this.staging.bbox.bottom],
-          scale,
-          0,
-          -this.staging.bbox.left * scale,
-          -this.staging.bbox.top * scale
+        this.page.view,
+        scale,
+        this.page.rotate,
+        -this.staging.bbox.left * scale,
+        -this.staging.bbox.top * scale,
+        false
       );
       this.stage = fabric.util.createCanvasElement();
       this.stage.width = b.width * scale;
@@ -15626,17 +15630,19 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       this.staging.renderTask = this.page.render(renderContext);
 
-
       this.staging.renderTask.then(
-          function(arg){
-            console.log("page render complete", arg);
+        function(){
+          if (_this.stage != null){
             _this.staging.processing = false;
             _this.staging.ready = true;
             _this.canvas.renderAll(_this.layer);
-          },
-          function(msg){
-            console.log("page render error:", msg);
           }
+        },
+        function(msg){
+          _this.staging.processing = false;
+          _this.staging.ready = false;
+          _this.stage = null;
+        }
       );
 
     },
@@ -15667,7 +15673,6 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
           return;
         }
       }
-      console.log("Cancelling rendering task", this.staging, this.stage);
       this.staging.renderTask.cancel();
       this.staging.renderTask = null;
       this.stage = null;

@@ -299,14 +299,17 @@
 
 
       this.staging.renderTask.then(
-          function(arg){
-            console.log("page render complete", arg);
-            _this.staging.processing = false;
-            _this.staging.ready = true;
-            _this.canvas.renderAll(_this.layer);
+          function(){
+            if (_this.stage != null){
+              _this.staging.processing = false;
+              _this.staging.ready = true;
+              _this.canvas.renderAll(_this.layer);
+            }
           },
           function(msg){
-            console.log("page render error:", msg);
+            _this.staging.processing = false;
+            _this.staging.ready = false;
+            _this.stage = null;
           }
       );
 
@@ -374,17 +377,19 @@
 
       this.staging.renderTask = this.page.render(renderContext);
 
-
       this.staging.renderTask.then(
-          function(arg){
-            console.log("page render complete", arg);
+        function(){
+          if (_this.stage != null){
             _this.staging.processing = false;
             _this.staging.ready = true;
             _this.canvas.renderAll(_this.layer);
-          },
-          function(msg){
-            console.log("page render error:", msg);
           }
+        },
+        function(msg){
+          _this.staging.processing = false;
+          _this.staging.ready = false;
+          _this.stage = null;
+        }
       );
 
     },
@@ -415,7 +420,6 @@
           return;
         }
       }
-      console.log("Cancelling rendering task", this.staging, this.stage);
       this.staging.renderTask.cancel();
       this.staging.renderTask = null;
       this.stage = null;
