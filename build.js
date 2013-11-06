@@ -165,6 +165,7 @@ var filesToInclude = [
   'src/shapes/image.class.js',
   'src/shapes/staged_image.class.js',
   'src/shapes/staged_painter.class.js',
+  'src/shapes/pdf.class.js',
 
 
   ifSpecifiedInclude('text', 'src/shapes/text.class.js'),
