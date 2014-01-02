@@ -15545,7 +15545,10 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       renderContext = {
         canvasContext: this.stage.getContext('2d'),
-        viewport: viewport
+        viewport: viewport,
+        continueCallback: function(next){
+          fabric.window.setTimeout(next, 1000/60);
+        }
       };
 
       this.staging.renderTask = this.page.render(renderContext);
@@ -15625,7 +15628,10 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       renderContext = {
         canvasContext: this.stage.getContext('2d'),
-        viewport: viewport
+        viewport: viewport,
+        continueCallback: function(next){
+          fabric.window.setTimeout(next, 1000/60);
+        }
       };
 
       this.staging.renderTask = this.page.render(renderContext);

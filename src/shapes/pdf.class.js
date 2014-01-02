@@ -292,7 +292,10 @@
 
       renderContext = {
         canvasContext: this.stage.getContext('2d'),
-        viewport: viewport
+        viewport: viewport,
+        continueCallback: function(next){
+          fabric.window.setTimeout(next, 1000/60);
+        }
       };
 
       this.staging.renderTask = this.page.render(renderContext);
@@ -372,7 +375,10 @@
 
       renderContext = {
         canvasContext: this.stage.getContext('2d'),
-        viewport: viewport
+        viewport: viewport,
+        continueCallback: function(next){
+          fabric.window.setTimeout(next, 1000/60);
+        }
       };
 
       this.staging.renderTask = this.page.render(renderContext);
