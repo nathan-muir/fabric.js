@@ -311,8 +311,11 @@
               }
             }
             style.cursor = self.defaultCursor;
+            self.fire('object:hover', {target: null, e:e});
           } else {
             self._setCursorFromEvent(e, target);
+            self.fire('object:hover', {target: target, e:e});
+            target.fire('hover', {e: e});
           }
         });
       }
