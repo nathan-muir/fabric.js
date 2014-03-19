@@ -15294,6 +15294,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       // create a 'stage' canvas for re-rasterising the image based on scale & top, left
       this.stage = fabric.util.createCanvasElement();
+      this.stageContext = this.stage.getContext('2d');
       this.stage.style.display = 'none';
       this.staging = {
         ready: false,
@@ -15542,12 +15543,11 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       this.staging.scale = scale;
 
       viewport = this.page.getViewport(scale);
-      this.stage = fabric.util.createCanvasElement();
       this.stage.width = viewport.width;
       this.stage.height = viewport.height;
 
       renderContext = {
-        canvasContext: this.stage.getContext('2d'),
+        canvasContext: this.stageContext,
         viewport: viewport,
         continueCallback: function(next){
           fabric.window.setTimeout(next, 1000/60);
@@ -15557,18 +15557,19 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       this.staging.renderTask = this.page.render(renderContext);
 
 
-      this.staging.renderTask.then(
+      this.staging.renderTask.promise.then(
           function(){
-            if (_this.stage != null){
-              _this.staging.processing = false;
-              _this.staging.ready = true;
-              _this.canvas.renderAll(_this.layer);
-            }
+            _this.staging.processing = false;
+            _this.staging.ready = true;
+            _this.canvas.renderAll(_this.layer);
           },
           function(msg){
-            _this.staging.processing = false;
-            _this.staging.ready = false;
-            _this.stage = null;
+            if (msg != 'cancelled'){
+              _this.stageContext.setTransform(1, 0, 0, 1, 0, 0);
+              _this.stageContext.clearRect(0, 0, _this.stage.width, _this.stage.height);
+              _this.staging.processing = false;
+              _this.staging.ready = false;
+            }
           }
       );
 
@@ -15625,12 +15626,11 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         -this.staging.bbox.top * scale,
         false
       );
-      this.stage = fabric.util.createCanvasElement();
       this.stage.width = b.width * scale;
       this.stage.height = b.height * scale;
 
       renderContext = {
-        canvasContext: this.stage.getContext('2d'),
+        canvasContext: this.stageContext,
         viewport: viewport,
         continueCallback: function(next){
           fabric.window.setTimeout(next, 1000/60);
@@ -15639,18 +15639,19 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       this.staging.renderTask = this.page.render(renderContext);
 
-      this.staging.renderTask.then(
+      this.staging.renderTask.promise.then(
         function(){
-          if (_this.stage != null){
-            _this.staging.processing = false;
-            _this.staging.ready = true;
-            _this.canvas.renderAll(_this.layer);
-          }
+          _this.staging.processing = false;
+          _this.staging.ready = true;
+          _this.canvas.renderAll(_this.layer);
         },
         function(msg){
-          _this.staging.processing = false;
-          _this.staging.ready = false;
-          _this.stage = null;
+          if (msg != 'cancelled'){
+            _this.stageContext.setTransform(1, 0, 0, 1, 0, 0);
+            _this.stageContext.clearRect(0, 0, _this.stage.width, _this.stage.height);
+            _this.staging.processing = false;
+            _this.staging.ready = false;
+          }
         }
       );
 
@@ -15684,7 +15685,8 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       }
       this.staging.renderTask.cancel();
       this.staging.renderTask = null;
-      this.stage = null;
+      this.stageContext.setTransform(1, 0, 0, 1, 0, 0);
+      this.stageContext.clearRect(0, 0, this.stage.width, this.stage.height);
       this.staging.ready = false;
       this.staging.processing = false;
     },
@@ -15710,6 +15712,19 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         this.createStage(width, height);
       }
 
+      // draw white bg for all pdfs
+      ctx.save();
+      this.transform(ctx);
+      ctx.beginPath();
+      ctx.fillStyle = 'white';
+      ctx.fillRect(
+        -this.width / 2,
+        -this.height / 2,
+        this.width,
+        this.height
+      );
+      ctx.closePath();
+      ctx.restore();
       if (!this.renderStage(ctx, width, height)){
         ctx.save();
         this.transform(ctx);
@@ -15955,6 +15970,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
   fabric.Pdf.async = true;
 
 })(typeof exports !== 'undefined' ? exports : this);
+
 
 (function(global) {
 
