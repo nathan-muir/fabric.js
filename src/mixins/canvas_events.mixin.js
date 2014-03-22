@@ -119,6 +119,9 @@
 
       var target;
 
+      this.mouseDown = false;
+      fabric.window.requestAnimationFrame(this.doRender);
+
       if (this.isDrawingMode && this._isCurrentlyDrawing) {
         this._isCurrentlyDrawing = false;
         this.freeDrawingBrush.onMouseUp();
@@ -160,7 +163,7 @@
       if (activeGroup) {
         activeGroup.setObjectsCoords();
         activeGroup.set('isMoving', false);
-        this._setCursor(this.defaultCursor);
+        this._setCursor(this.priorityCursor || this.defaultCursor);
       }
 
       // clear selection
@@ -169,6 +172,7 @@
 
       this._setCursorFromEvent(e, target);
 
+      /*
       // fix for FF
       this._setCursor('');
 
@@ -176,7 +180,7 @@
       setTimeout(function () {
         _this._setCursorFromEvent(e, target);
       }, 50);
-
+      */
       this.fire('mouse:up', { target: target, e: e });
       target && target.fire('mouseup', { e: e });
     },
@@ -196,6 +200,8 @@
       // accept only left clicks
       var isLeftClick  = 'which' in e ? e.which === 1 : e.button === 1;
       if (!isLeftClick && !fabric.isTouchSupported) return;
+
+      this.mouseDown = true;
 
       if (this.isDrawingMode) {
         pointer = this.getPointer(e);
@@ -274,7 +280,7 @@
           pointer = this.getPointer(e);
           this.freeDrawingBrush.onMouseMove(pointer);
         }
-        this.lowerCanvasEl.style.cursor = this.freeDrawingCursor;
+        this._setCursor(this.freeDrawingCursor);
         this.fire('mouse:move', { e: e });
         return;
       }
@@ -290,34 +296,27 @@
         this.renderTop();
       }
       else if (!this._currentTransform) {
-
-        // alias style to elimintate unnecessary lookup
-        var style = this.lowerCanvasEl.style;
-
         // Here we are hovering the canvas then we will determine
         // what part of the pictures we are hovering to change the caret symbol.
         // We won't do that while dragging or rotating in order to improve the
         // performance.
         var self = this;
 
-        style.cursor = this.defaultCursor;
-
-        this.findTargetAsync(e, null, function(target){
-          if (!target || target && !target.selectable) {
-            // image/text was hovered-out from, we remove its borders
-            for (var i = self._objects.length; i--; ) {
-              if (self._objects[i] && !self._objects[i].active) {
-                self._objects[i].set('active', false);
-              }
+        target = this.findTarget(e, null);
+        if (!target || (target && !target.selectable)) {
+          // image/text was hovered-out from, we remove its borders
+          for (var i = self._objects.length; i--; ) {
+            if (self._objects[i] && !self._objects[i].active) {
+              self._objects[i].set('active', false);
             }
-            style.cursor = self.defaultCursor;
-            self.fire('object:hover', {target: null, e:e});
-          } else {
-            self._setCursorFromEvent(e, target);
-            self.fire('object:hover', {target: target, e:e});
-            target.fire('hover', {e: e});
           }
-        });
+          this._setCursor(this.priorityCursor || this.defaultCursor);
+          self.fire('object:hover', {target: null, e:e});
+        } else {
+          self._setCursorFromEvent(e, target);
+          self.fire('object:hover', {target: target, e:e});
+          target.fire('hover', {e: e});
+        }
       }
       else {
         // object is being transformed (scaled/rotated/moved/etc.)
@@ -399,9 +398,8 @@
      * @param {Object} target Object that the mouse is hovering, if so.
      */
     _setCursorFromEvent: function (e, target) {
-      var s = this.lowerCanvasEl.style;
       if (!target) {
-        s.cursor = this.defaultCursor;
+        this._setCursor(this.priorityCursor || this.defaultCursor);
         return false;
       }
       else {
@@ -412,7 +410,7 @@
                       && target._findTargetCorner(e, this._offset);
 
         if (!corner) {
-          s.cursor = this.hoverCursor;
+          this._setCursor(target.hoverCursor || this.hoverCursor);
         }
         else {
           if (corner in cursorOffset) {
@@ -423,13 +421,13 @@
             n += cursorOffset[corner];
             // normalize n to be from 0 to 7
             n %= 8;
-            s.cursor = cursorMap[n];
+            this._setCursor(cursorMap[n]);
           }
           else if (corner === 'mtr' && target.hasRotatingPoint) {
-            s.cursor = this.rotationCursor;
+            this._setCursor(this.rotationCursor);
           }
           else {
-            s.cursor = this.defaultCursor;
+            this._setCursor(this.priorityCursor || this.defaultCursor);
             return false;
           }
         }

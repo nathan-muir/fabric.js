@@ -27,6 +27,7 @@
     this._createCacheCanvas();
     this.layers = {};
     this.contexts = {};
+
     fabric.Canvas.activeInstance = this;
   };
 
@@ -89,13 +90,19 @@
      * Default cursor value used when hovering over an object on canvas
      * @type String
      */
-    hoverCursor:            'move',
+    hoverCursor:            'pointer',
 
     /**
      * Default cursor value used when moving an object on canvas
      * @type String
      */
     moveCursor:             'move',
+
+    /**
+     * Current "priority" cursor. will be used over the default
+     * @type String
+     */
+    priorityCursor:         null,
 
     /**
      * Default cursor value used for the entire canvas
@@ -595,7 +602,29 @@
     _setCursor: function (value) {
       this.lowerCanvasEl.style.cursor = value;
     },
-
+    /**
+     *
+     * @param value
+     */
+    setDefaultCursor: function(value){
+      if (value == null){
+         value = 'default';
+      }
+      if (this.defaultCursor != value){
+        this.defaultCursor = value;
+        this._setCursor(this.priorityCursor || this.defaultCursor);
+      }
+    },
+    /**
+     *
+     * @param value
+     */
+    setPriorityCursor: function(value){
+      if (this.priorityCursor != value){
+        this.priorityCursor = value;
+        this._setCursor(this.priorityCursor || this.defaultCursor);
+      }
+    },
     /**
      * @private
      */
@@ -704,8 +733,14 @@
      */
     findTarget: function (e, skipGroup) {
 
-      var target,
-          pointer = this.getPointer(e);
+      var pointer = this.getPointer(e),
+          image = this.contextCache.getImageData(pointer.x, pointer.y, 1, 1),
+          imageData = image.data;
+
+      return this.getObjectBySerial(imageData[0], imageData[1], imageData[2], imageData[3]);
+
+      /*
+
 
       if (this.controlsAboveOverlay &&
           this.lastRenderedObjectWithControlsAboveOverlay &&
@@ -749,12 +784,7 @@
       }
 
       return target;
-    },
-    findTargetAsync: function(e, skipGroup, callback){
-      var self = this;
-      fabric.window.setTimeout(function(){
-        callback(self.findTarget(e,skipGroup))
-      },1);
+      */
     },
     /**
      * Returns pointer coordinates relative to canvas.

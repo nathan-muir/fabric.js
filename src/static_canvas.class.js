@@ -138,6 +138,8 @@
       */
     _initStatic: function(el, options) {
       this._objects = [];
+      this._objectsBySerial = {};
+      this._objectIdx = 0;
 
       this.renderMain = false;
       this.blocking = true;
@@ -419,25 +421,47 @@
      * Given a context, renders an object on that context
      * @param ctx {Object} context to render object on
      * @param object {Object} object to render
-     * @param {Number} width document width
-     * @param {Number} height document height
+     * @param {Boolean} [hitCanvasMode=false]
      * @private
      */
-    _draw: function (ctx, object, width, height) {
+    _draw: function (ctx, object, hitCanvasMode) {
       if (!object) return;
 
       if (this.controlsAboveOverlay) {
         var hasBorders = object.hasBorders, hasControls = object.hasControls;
         object.hasBorders = object.hasControls = false;
-        object.render(ctx, false, width, height);
+        object.render(ctx, false, hitCanvasMode);
         object.hasBorders = hasBorders;
         object.hasControls = hasControls;
       }
       else {
-        object.render(ctx, false, width, height);
+        object.render(ctx, false, hitCanvasMode);
       }
     },
 
+    generateSerial: function(obj){
+      if (obj.serial != null && (this._objectsBySerial[obj.serial] == null || this._objectsBySerial[obj.serial] === obj)) {
+        return;
+      }
+
+      do {
+        // MAX_INT = (r) + (g) + (b)
+        // MAX_INT = ((255 << 16) + (255 << 8) + (255 << 0)) << 0
+        // MAX_INT = 16777215
+        // 0,0,0,0 ==
+        // range 1 -> 16777215 ...
+        this._objectIdx = (this._objectIdx % (16777215 - 5)) + 5;
+        //this._objectIdx = ((Math.random() * 16777214) << 0) + 1;
+      } while(this._objectsBySerial[this._objectIdx] != null);
+      obj.serial = this._objectIdx;
+      obj.serialRgb = null;
+    },
+
+    getObjectBySerial: function(r, g, b, a){
+      if (a !== 255) return;
+      var serial = ((r << 16) + (g << 8) + (b << 0)) << 0;
+      return this._objectsBySerial[serial];
+    },
     /**
      * @private
      */
@@ -445,6 +469,8 @@
       this.stateful && obj.setupState();
       obj.setCoords();
       obj.canvas = this;
+      this.generateSerial(obj);
+      this._objectsBySerial[obj.serial] = obj;
       this.fire('object:added', { target: obj });
       obj.fire('added');
     },
@@ -453,6 +479,7 @@
      * @private
      */
     _onObjectRemoved: function(obj) {
+      delete this._objectsBySerial[obj.serial];
       this.fire('object:removed', { target: obj });
       obj.fire('removed');
     },
@@ -533,7 +560,7 @@
           hasLayers = true;
           break;
         }
-        if (!hasLayers){
+        if (!hasLayers && !this.renderCache){
           this.rendering = false;
           return;
         }
@@ -547,16 +574,25 @@
         this.clearContext(this.contexts[layerName]);
       }
 
+      // set `renderCache` for the next round!
+      this.renderCache = this.mouseDown;
+      if (!this.mouseDown){
+        this.clearContext(this.contextCache);
+      }
+
       this.fire('before:render');
       for (i = 0, I = this._objects.length; i < I; i++) {
         item = this._objects[i];
         if (item) {
           if (typeof item.layer == "undefined"){
             if (renderMain){
-              this._draw(this.contextContainer, item, this.width, this.height);
+              this._draw(this.contextContainer, item);
             }
           } else if (typeof renderLayers[item.layer] != "undefined") {
-            this._draw(this.contexts[item.layer], item, this.width, this.height);
+            this._draw(this.contexts[item.layer], item);
+          }
+          if (!this.mouseDown){
+            this._draw(this.contextCache, item, true);
           }
         }
       }

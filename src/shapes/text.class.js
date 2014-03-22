@@ -644,14 +644,24 @@
      * Renders text instance on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
       if (!this.visible) return;
 
+      if (hitCanvasMode && this.noHitMode) return;
+
+
+      if (hitCanvasMode){
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this._serialToRgb();
+        ctx.strokeStyle = this._serialToRgb();
+      }
+
       ctx.save();
       this._render(ctx);
-      if (!noTransform && this.active) {
+      if (!noTransform && this.active && !hitCanvasMode) {
         this.drawBorders(ctx);
         this.drawControls(ctx);
       }

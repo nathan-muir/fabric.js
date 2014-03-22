@@ -438,22 +438,21 @@
      * Renders image on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
-     * @param {Number} width
-     * @param {Number} height
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
-      if (!this.visible) return;
+      if (!this.visible || hitCanvasMode) return;
 
       this.updateDmax();
 
       if (this.staging.processing){
         // cancel processing?
         // if current scale doesn't match  or no longer in bounding box?
-        this.checkCreateStage(width, height);
+        this.checkCreateStage(this.canvas.width, this.canvas.height);
       }
       if (!this.staging.processing){
-        this.createStage(width, height);
+        this.createStage(this.canvas.width, this.canvas.height);
       }
 
       // draw white bg for all pdfs
@@ -469,7 +468,7 @@
       );
       ctx.closePath();
       ctx.restore();
-      if (!this.renderStage(ctx, width, height)){
+      if (!this.renderStage(ctx, this.canvas.width, this.canvas.height)){
         ctx.save();
         this.transform(ctx);
         this._render(ctx);

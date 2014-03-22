@@ -20,6 +20,17 @@
   fabric.Object = fabric.util.createClass(/** @lends fabric.Object.prototype */ {
 
     /**
+     * @type Number
+     * @default
+     */
+    serial:                    null,
+
+    /**
+     * @type String
+     * @default
+     */
+    serialRgb:                null,
+    /**
      * Type of an object (rect, circle, path, etc.)
      * @type String
      * @default
@@ -374,6 +385,20 @@
       }
     },
 
+    _serialToRgb: function(){
+      var r, g, b;
+      if (this.serial == null){
+        throw new Error('Object has no serial');
+      }
+      if (this.serialRgb == null){
+        b = this.serial % 256;
+        g = (this.serial >> 8) % 256;
+        r = (this.serial >> 16) % 256;
+
+        this.serialRgb = "rgb("+r+","+g+","+b+")"
+      }
+      return this.serialRgb;
+    },
     /**
      * @private
      */
@@ -676,12 +701,15 @@
      * Renders an object on a specified context
      * @param {CanvasRenderingContext2D} ctx context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
+     * @param {Boolean} [hitCanvasMode=false]this.canvas.
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if width/height are zeros or object is not visible
       if (this.width === 0 || this.height === 0 || !this.visible) return;
 
-      if (width && height && (this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > width || this.top - this.height > height)) return;
+      if (hitCanvasMode && this.noHitMode) return;
+
+      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
 
       ctx.save();
 
@@ -713,6 +741,12 @@
           : this.fill;
       }
 
+      if (hitCanvasMode){
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this._serialToRgb();
+        ctx.strokeStyle = this._serialToRgb();
+      }
+
       if (m && this.group) {
         ctx.translate(-this.group.width/2, -this.group.height/2);
         ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
@@ -724,7 +758,7 @@
       this.clipTo && ctx.restore();
       this._removeShadow(ctx);
 
-      if (this.active && !noTransform) {
+      if (this.active && !noTransform && !hitCanvasMode) {
         this.drawBorders(ctx);
         this.drawControls(ctx);
       }

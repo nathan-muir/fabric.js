@@ -5392,6 +5392,8 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       */
     _initStatic: function(el, options) {
       this._objects = [];
+      this._objectsBySerial = {};
+      this._objectIdx = 0;
 
       this.renderMain = false;
       this.blocking = true;
@@ -5673,25 +5675,47 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * Given a context, renders an object on that context
      * @param ctx {Object} context to render object on
      * @param object {Object} object to render
-     * @param {Number} width document width
-     * @param {Number} height document height
+     * @param {Boolean} [hitCanvasMode=false]
      * @private
      */
-    _draw: function (ctx, object, width, height) {
+    _draw: function (ctx, object, hitCanvasMode) {
       if (!object) return;
 
       if (this.controlsAboveOverlay) {
         var hasBorders = object.hasBorders, hasControls = object.hasControls;
         object.hasBorders = object.hasControls = false;
-        object.render(ctx, false, width, height);
+        object.render(ctx, false, hitCanvasMode);
         object.hasBorders = hasBorders;
         object.hasControls = hasControls;
       }
       else {
-        object.render(ctx, false, width, height);
+        object.render(ctx, false, hitCanvasMode);
       }
     },
 
+    generateSerial: function(obj){
+      if (obj.serial != null && (this._objectsBySerial[obj.serial] == null || this._objectsBySerial[obj.serial] === obj)) {
+        return;
+      }
+
+      do {
+        // MAX_INT = (r) + (g) + (b)
+        // MAX_INT = ((255 << 16) + (255 << 8) + (255 << 0)) << 0
+        // MAX_INT = 16777215
+        // 0,0,0,0 ==
+        // range 1 -> 16777215 ...
+        this._objectIdx = (this._objectIdx % (16777215 - 5)) + 5;
+        //this._objectIdx = ((Math.random() * 16777214) << 0) + 1;
+      } while(this._objectsBySerial[this._objectIdx] != null);
+      obj.serial = this._objectIdx;
+      obj.serialRgb = null;
+    },
+
+    getObjectBySerial: function(r, g, b, a){
+      if (a !== 255) return;
+      var serial = ((r << 16) + (g << 8) + (b << 0)) << 0;
+      return this._objectsBySerial[serial];
+    },
     /**
      * @private
      */
@@ -5699,6 +5723,8 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       this.stateful && obj.setupState();
       obj.setCoords();
       obj.canvas = this;
+      this.generateSerial(obj);
+      this._objectsBySerial[obj.serial] = obj;
       this.fire('object:added', { target: obj });
       obj.fire('added');
     },
@@ -5707,6 +5733,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * @private
      */
     _onObjectRemoved: function(obj) {
+      delete this._objectsBySerial[obj.serial];
       this.fire('object:removed', { target: obj });
       obj.fire('removed');
     },
@@ -5787,7 +5814,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
           hasLayers = true;
           break;
         }
-        if (!hasLayers){
+        if (!hasLayers && !this.renderCache){
           this.rendering = false;
           return;
         }
@@ -5801,16 +5828,25 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
         this.clearContext(this.contexts[layerName]);
       }
 
+      // set `renderCache` for the next round!
+      this.renderCache = this.mouseDown;
+      if (!this.mouseDown){
+        this.clearContext(this.contextCache);
+      }
+
       this.fire('before:render');
       for (i = 0, I = this._objects.length; i < I; i++) {
         item = this._objects[i];
         if (item) {
           if (typeof item.layer == "undefined"){
             if (renderMain){
-              this._draw(this.contextContainer, item, this.width, this.height);
+              this._draw(this.contextContainer, item);
             }
           } else if (typeof renderLayers[item.layer] != "undefined") {
-            this._draw(this.contexts[item.layer], item, this.width, this.height);
+            this._draw(this.contexts[item.layer], item);
+          }
+          if (!this.mouseDown){
+            this._draw(this.contextCache, item, true);
           }
         }
       }
@@ -6440,6 +6476,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
     this._createCacheCanvas();
     this.layers = {};
     this.contexts = {};
+
     fabric.Canvas.activeInstance = this;
   };
 
@@ -6502,13 +6539,19 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * Default cursor value used when hovering over an object on canvas
      * @type String
      */
-    hoverCursor:            'move',
+    hoverCursor:            'pointer',
 
     /**
      * Default cursor value used when moving an object on canvas
      * @type String
      */
     moveCursor:             'move',
+
+    /**
+     * Current "priority" cursor. will be used over the default
+     * @type String
+     */
+    priorityCursor:         null,
 
     /**
      * Default cursor value used for the entire canvas
@@ -7008,7 +7051,29 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
     _setCursor: function (value) {
       this.lowerCanvasEl.style.cursor = value;
     },
-
+    /**
+     *
+     * @param value
+     */
+    setDefaultCursor: function(value){
+      if (value == null){
+         value = 'default';
+      }
+      if (this.defaultCursor != value){
+        this.defaultCursor = value;
+        this._setCursor(this.priorityCursor || this.defaultCursor);
+      }
+    },
+    /**
+     *
+     * @param value
+     */
+    setPriorityCursor: function(value){
+      if (this.priorityCursor != value){
+        this.priorityCursor = value;
+        this._setCursor(this.priorityCursor || this.defaultCursor);
+      }
+    },
     /**
      * @private
      */
@@ -7117,8 +7182,14 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      */
     findTarget: function (e, skipGroup) {
 
-      var target,
-          pointer = this.getPointer(e);
+      var pointer = this.getPointer(e),
+          image = this.contextCache.getImageData(pointer.x, pointer.y, 1, 1),
+          imageData = image.data;
+
+      return this.getObjectBySerial(imageData[0], imageData[1], imageData[2], imageData[3]);
+
+      /*
+
 
       if (this.controlsAboveOverlay &&
           this.lastRenderedObjectWithControlsAboveOverlay &&
@@ -7162,12 +7233,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       }
 
       return target;
-    },
-    findTargetAsync: function(e, skipGroup, callback){
-      var self = this;
-      fabric.window.setTimeout(function(){
-        callback(self.findTarget(e,skipGroup))
-      },1);
+      */
     },
     /**
      * Returns pointer coordinates relative to canvas.
@@ -7563,6 +7629,9 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
 
       var target;
 
+      this.mouseDown = false;
+      fabric.window.requestAnimationFrame(this.doRender);
+
       if (this.isDrawingMode && this._isCurrentlyDrawing) {
         this._isCurrentlyDrawing = false;
         this.freeDrawingBrush.onMouseUp();
@@ -7604,7 +7673,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       if (activeGroup) {
         activeGroup.setObjectsCoords();
         activeGroup.set('isMoving', false);
-        this._setCursor(this.defaultCursor);
+        this._setCursor(this.priorityCursor || this.defaultCursor);
       }
 
       // clear selection
@@ -7613,6 +7682,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
 
       this._setCursorFromEvent(e, target);
 
+      /*
       // fix for FF
       this._setCursor('');
 
@@ -7620,7 +7690,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       setTimeout(function () {
         _this._setCursorFromEvent(e, target);
       }, 50);
-
+      */
       this.fire('mouse:up', { target: target, e: e });
       target && target.fire('mouseup', { e: e });
     },
@@ -7640,6 +7710,8 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       // accept only left clicks
       var isLeftClick  = 'which' in e ? e.which === 1 : e.button === 1;
       if (!isLeftClick && !fabric.isTouchSupported) return;
+
+      this.mouseDown = true;
 
       if (this.isDrawingMode) {
         pointer = this.getPointer(e);
@@ -7718,7 +7790,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
           pointer = this.getPointer(e);
           this.freeDrawingBrush.onMouseMove(pointer);
         }
-        this.lowerCanvasEl.style.cursor = this.freeDrawingCursor;
+        this._setCursor(this.freeDrawingCursor);
         this.fire('mouse:move', { e: e });
         return;
       }
@@ -7734,34 +7806,27 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
         this.renderTop();
       }
       else if (!this._currentTransform) {
-
-        // alias style to elimintate unnecessary lookup
-        var style = this.lowerCanvasEl.style;
-
         // Here we are hovering the canvas then we will determine
         // what part of the pictures we are hovering to change the caret symbol.
         // We won't do that while dragging or rotating in order to improve the
         // performance.
         var self = this;
 
-        style.cursor = this.defaultCursor;
-
-        this.findTargetAsync(e, null, function(target){
-          if (!target || target && !target.selectable) {
-            // image/text was hovered-out from, we remove its borders
-            for (var i = self._objects.length; i--; ) {
-              if (self._objects[i] && !self._objects[i].active) {
-                self._objects[i].set('active', false);
-              }
+        target = this.findTarget(e, null);
+        if (!target || (target && !target.selectable)) {
+          // image/text was hovered-out from, we remove its borders
+          for (var i = self._objects.length; i--; ) {
+            if (self._objects[i] && !self._objects[i].active) {
+              self._objects[i].set('active', false);
             }
-            style.cursor = self.defaultCursor;
-            self.fire('object:hover', {target: null, e:e});
-          } else {
-            self._setCursorFromEvent(e, target);
-            self.fire('object:hover', {target: target, e:e});
-            target.fire('hover', {e: e});
           }
-        });
+          this._setCursor(this.priorityCursor || this.defaultCursor);
+          self.fire('object:hover', {target: null, e:e});
+        } else {
+          self._setCursorFromEvent(e, target);
+          self.fire('object:hover', {target: target, e:e});
+          target.fire('hover', {e: e});
+        }
       }
       else {
         // object is being transformed (scaled/rotated/moved/etc.)
@@ -7843,9 +7908,8 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * @param {Object} target Object that the mouse is hovering, if so.
      */
     _setCursorFromEvent: function (e, target) {
-      var s = this.lowerCanvasEl.style;
       if (!target) {
-        s.cursor = this.defaultCursor;
+        this._setCursor(this.priorityCursor || this.defaultCursor);
         return false;
       }
       else {
@@ -7856,7 +7920,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
                       && target._findTargetCorner(e, this._offset);
 
         if (!corner) {
-          s.cursor = this.hoverCursor;
+          this._setCursor(target.hoverCursor || this.hoverCursor);
         }
         else {
           if (corner in cursorOffset) {
@@ -7867,13 +7931,13 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
             n += cursorOffset[corner];
             // normalize n to be from 0 to 7
             n %= 8;
-            s.cursor = cursorMap[n];
+            this._setCursor(cursorMap[n]);
           }
           else if (corner === 'mtr' && target.hasRotatingPoint) {
-            s.cursor = this.rotationCursor;
+            this._setCursor(this.rotationCursor);
           }
           else {
-            s.cursor = this.defaultCursor;
+            this._setCursor(this.priorityCursor || this.defaultCursor);
             return false;
           }
         }
@@ -8152,6 +8216,17 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
    */
   fabric.Object = fabric.util.createClass(/** @lends fabric.Object.prototype */ {
 
+    /**
+     * @type Number
+     * @default
+     */
+    serial:                    null,
+
+    /**
+     * @type String
+     * @default
+     */
+    serialRgb:                null,
     /**
      * Type of an object (rect, circle, path, etc.)
      * @type String
@@ -8507,6 +8582,20 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       }
     },
 
+    _serialToRgb: function(){
+      var r, g, b;
+      if (this.serial == null){
+        throw new Error('Object has no serial');
+      }
+      if (this.serialRgb == null){
+        b = this.serial % 256;
+        g = (this.serial >> 8) % 256;
+        r = (this.serial >> 16) % 256;
+
+        this.serialRgb = "rgb("+r+","+g+","+b+")"
+      }
+      return this.serialRgb;
+    },
     /**
      * @private
      */
@@ -8809,12 +8898,15 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
      * Renders an object on a specified context
      * @param {CanvasRenderingContext2D} ctx context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
+     * @param {Boolean} [hitCanvasMode=false]this.canvas.
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if width/height are zeros or object is not visible
       if (this.width === 0 || this.height === 0 || !this.visible) return;
 
-      if (width && height && (this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > width || this.top - this.height > height)) return;
+      if (hitCanvasMode && this.noHitMode) return;
+
+      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
 
       ctx.save();
 
@@ -8846,6 +8938,12 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
           : this.fill;
       }
 
+      if (hitCanvasMode){
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this._serialToRgb();
+        ctx.strokeStyle = this._serialToRgb();
+      }
+
       if (m && this.group) {
         ctx.translate(-this.group.width/2, -this.group.height/2);
         ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
@@ -8857,7 +8955,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       this.clipTo && ctx.restore();
       this._removeShadow(ctx);
 
-      if (this.active && !noTransform) {
+      if (this.active && !noTransform && !hitCanvasMode) {
         this.drawBorders(ctx);
         this.drawControls(ctx);
       }
@@ -12262,14 +12360,15 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * Renders path on a specified context
      * @param {CanvasRenderingContext2D} ctx context to render path on
      * @param {Boolean} [noTransform] When true, context is not transformed
-     * @param {Number} width
-     * @param {Number} height
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
       if (!this.visible) return;
 
-      if (width && height && (this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > width || this.top - this.height > height)) return;
+      if (hitCanvasMode && this.noHitMode) return;
+
+      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
 
       ctx.save();
       var m = this.transformMatrix;
@@ -12300,6 +12399,12 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
           : this.stroke;
       }
 
+      if (hitCanvasMode){
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this._serialToRgb();
+        ctx.strokeStyle = this._serialToRgb();
+      }
+
       this._setShadow(ctx);
       this.clipTo && fabric.util.clipContext(this, ctx);
       ctx.beginPath();
@@ -12310,7 +12415,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       this.clipTo && ctx.restore();
       this._removeShadow(ctx);
 
-      if (!noTransform && this.active) {
+      if (!hitCanvasMode && !noTransform && this.active) {
         this.drawBorders(ctx);
         this.drawControls(ctx);
       }
@@ -14076,16 +14181,15 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * Renders image on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
-     * @param {Number} width
-     * @param {Number} height
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
-      if (!this.visible) return;
+      if (!this.visible || hitCanvasMode) return;
 
       this.updateDmax();
 
-      this.createStage(width, height);
+      this.createStage(this.canvas.width, this.canvas.height);
 
       ctx.save();
       this.transform(ctx);
@@ -14100,7 +14204,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       ctx.closePath();
       ctx.restore();
 
-      if (!this.renderStage(ctx, width, height)){
+      if (!this.renderStage(ctx, this.canvas.width, this.canvas.height)){
         ctx.save();
         this.transform(ctx);
         this._render(ctx);
@@ -14872,22 +14976,21 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * Renders image on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
-     * @param {Number} width
-     * @param {Number} height
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
-      if (!this.visible) return;
+      if (!this.visible || hitCanvasMode) return;
 
       this.updateDmax();
 
       if (this.staging.processing){
         // cancel processing?
         // if current scale doesn't match  or no longer in bounding box?
-        this.checkCreateStage(width, height);
+        this.checkCreateStage(this.canvas.width, this.canvas.height);
       }
       if (!this.staging.processing){
-        this.createStage(width, height);
+        this.createStage(this.canvas.width, this.canvas.height);
       }
 
       ctx.save();
@@ -14903,7 +15006,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       ctx.closePath();
       ctx.restore();
 
-      if (!this.renderStage(ctx, width, height)){
+      if (!this.renderStage(ctx, this.canvas.width, this.canvas.height)){
         ctx.save();
         this.transform(ctx);
         this._render(ctx);
@@ -15253,6 +15356,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
   fabric.StagedPainter.async = true;
 
 })(typeof exports !== 'undefined' ? exports : this);
+
 
 (function(global) {
 
@@ -15694,22 +15798,21 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * Renders image on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
-     * @param {Number} width
-     * @param {Number} height
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
-      if (!this.visible) return;
+      if (!this.visible || hitCanvasMode) return;
 
       this.updateDmax();
 
       if (this.staging.processing){
         // cancel processing?
         // if current scale doesn't match  or no longer in bounding box?
-        this.checkCreateStage(width, height);
+        this.checkCreateStage(this.canvas.width, this.canvas.height);
       }
       if (!this.staging.processing){
-        this.createStage(width, height);
+        this.createStage(this.canvas.width, this.canvas.height);
       }
 
       // draw white bg for all pdfs
@@ -15725,7 +15828,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       );
       ctx.closePath();
       ctx.restore();
-      if (!this.renderStage(ctx, width, height)){
+      if (!this.renderStage(ctx, this.canvas.width, this.canvas.height)){
         ctx.save();
         this.transform(ctx);
         this._render(ctx);
@@ -16618,14 +16721,24 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * Renders text instance on a specified context
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
       if (!this.visible) return;
 
+      if (hitCanvasMode && this.noHitMode) return;
+
+
+      if (hitCanvasMode){
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this._serialToRgb();
+        ctx.strokeStyle = this._serialToRgb();
+      }
+
       ctx.save();
       this._render(ctx);
-      if (!noTransform && this.active) {
+      if (!noTransform && this.active && !hitCanvasMode) {
         this.drawBorders(ctx);
         this.drawControls(ctx);
       }

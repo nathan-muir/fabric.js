@@ -421,14 +421,15 @@
      * Renders path on a specified context
      * @param {CanvasRenderingContext2D} ctx context to render path on
      * @param {Boolean} [noTransform] When true, context is not transformed
-     * @param {Number} width
-     * @param {Number} height
+     * @param {Boolean} [hitCanvasMode=false]
      */
-    render: function(ctx, noTransform, width, height) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
       if (!this.visible) return;
 
-      if (width && height && (this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > width || this.top - this.height > height)) return;
+      if (hitCanvasMode && this.noHitMode) return;
+
+      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
 
       ctx.save();
       var m = this.transformMatrix;
@@ -459,6 +460,12 @@
           : this.stroke;
       }
 
+      if (hitCanvasMode){
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this._serialToRgb();
+        ctx.strokeStyle = this._serialToRgb();
+      }
+
       this._setShadow(ctx);
       this.clipTo && fabric.util.clipContext(this, ctx);
       ctx.beginPath();
@@ -469,7 +476,7 @@
       this.clipTo && ctx.restore();
       this._removeShadow(ctx);
 
-      if (!noTransform && this.active) {
+      if (!hitCanvasMode && !noTransform && this.active) {
         this.drawBorders(ctx);
         this.drawControls(ctx);
       }
