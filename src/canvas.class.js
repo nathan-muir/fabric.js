@@ -393,9 +393,11 @@
      * @private
      */
     _handleGroupLogic: function (e, target) {
+      var pointer;
       if (target === this.getActiveGroup()) {
+        pointer = this.getPointer(e);
         // if it's a group, find target again, this time skipping group
-        target = this.findTarget(e, true);
+        target = this.findTarget(pointer, true);
         // if even object is not found, bail out
         if (!target || target.isType('group')) {
           return;
@@ -728,13 +730,12 @@
 
     /**
      * Method that determines what object we are clicking on
-     * @param {Event} e mouse event
+     * @param {Object} pointer
      * @param {Boolean} skipGroup when true, group is skipped and only objects are traversed through
      */
-    findTarget: function (e, skipGroup) {
+    findTarget: function (pointer, skipGroup) {
 
-      var pointer = this.getPointer(e),
-          image = this.contextCache.getImageData(pointer.x, pointer.y, 1, 1),
+      var image = this.contextCache.getImageData(pointer.x, pointer.y, 1, 1),
           imageData = image.data;
 
       return this.getObjectBySerial(imageData[0], imageData[1], imageData[2], imageData[3]);
