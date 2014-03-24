@@ -283,7 +283,7 @@
         // determine if it's a drag or rotate case
         this.stateful && target.saveState();
 
-        if ((corner = target._findTargetCorner(e, this._offset))) {
+        if ((corner = target._findTargetCorner(pointer, this._offset))) {
           this.onBeforeScaleRotate(target);
         }
 
@@ -454,11 +454,12 @@
         return false;
       }
       else {
-        var activeGroup = this.getActiveGroup();
+        var activeGroup = this.getActiveGroup(),
+            pointer = this.getPointer(e);
         // only show proper corner when group selection is not active
         var corner = target._findTargetCorner
                       && (!activeGroup || !activeGroup.contains(target))
-                      && target._findTargetCorner(e, this._offset);
+                      && target._findTargetCorner(pointer, this._offset);
 
         if (!corner) {
           this._setCursor(target.hoverCursor || this.hoverCursor);

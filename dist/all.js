@@ -6457,7 +6457,10 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       abs = Math.abs,
       min = Math.min,
       max = Math.max,
-
+      findTargetPattern = [96,128,124,120,100,92,72,68,64,160,156,152,148,144,132,116,104,88,76,60,48,44,40,36,32,192,188,184,180,176,172,168,164,140,136,112,108,84,80,56,52,28,24,20,16,12,8,4,0],
+      findTargetPatternLength = findTargetPattern.length,
+      findTargetPatternWidth = 7,
+      findTargetPatternRadius = 3,
       STROKE_OFFSET = 0.5;
 
   /**
@@ -6649,13 +6652,12 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * @param {fabric.Object} target Object to test against
      * @return {Boolean} true if point is contained within an area of given object
      */
-    containsPoint: function (e, target) {
-      var pointer = this.getPointer(e),
-          xy = this._normalizePointer(target, pointer);
+    containsPoint: function (pointer, target) {
+      var xy = this._normalizePointer(target, pointer);
 
       // http://www.geog.ubc.ca/courses/klink/gis.notes/ncgia/u32.html
       // http://idav.ucdavis.edu/~okreylos/TAship/Spring2000/PointInPolygon.html
-      return (target.containsPoint(xy) || target._findTargetCorner(e, this._offset));
+      return (target.containsPoint(xy) || target._findTargetCorner(pointer, this._offset));
     },
 
     /**
@@ -6761,7 +6763,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
           corner,
           pointer = getPointer(e, target.canvas.lowerCanvasEl);
 
-      corner = target._findTargetCorner(e, this._offset);
+      corner = target._findTargetCorner(this.getPointer(e), this._offset);
       if (corner) {
         action = (corner === 'ml' || corner === 'mr')
           ? 'scaleX'
@@ -6842,9 +6844,11 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * @private
      */
     _handleGroupLogic: function (e, target) {
+      var pointer;
       if (target === this.getActiveGroup()) {
+        pointer = this.getPointer(e);
         // if it's a group, find target again, this time skipping group
-        target = this.findTarget(e, true);
+        target = this.findTarget(pointer, true);
         // if even object is not found, bail out
         if (!target || target.isType('group')) {
           return;
@@ -7182,57 +7186,32 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      */
     findTarget: function (pointer, skipGroup) {
 
-      var image = this.contextCache.getImageData(pointer.x, pointer.y, 1, 1),
-          imageData = image.data;
-
-      return this.getObjectBySerial(imageData[0], imageData[1], imageData[2], imageData[3]);
-
-      /*
-
+      var image, target, imageData, i, x;
 
       if (this.controlsAboveOverlay &&
           this.lastRenderedObjectWithControlsAboveOverlay &&
           this.lastRenderedObjectWithControlsAboveOverlay.visible &&
-          this.containsPoint(e, this.lastRenderedObjectWithControlsAboveOverlay) &&
-          this.lastRenderedObjectWithControlsAboveOverlay._findTargetCorner(e, this._offset)) {
+          this.containsPoint(pointer, this.lastRenderedObjectWithControlsAboveOverlay) &&
+          this.lastRenderedObjectWithControlsAboveOverlay._findTargetCorner(pointer, this._offset)) {
         target = this.lastRenderedObjectWithControlsAboveOverlay;
         return target;
       }
 
       // first check current group (if one exists)
       var activeGroup = this.getActiveGroup();
-      if (activeGroup && !skipGroup && this.containsPoint(e, activeGroup)) {
+      if (activeGroup && !skipGroup && this.containsPoint(pointer, activeGroup)) {
         target = activeGroup;
         return target;
       }
-
-      // then check all of the objects on canvas
-      // Cache all targets where their bounding box contains point.
-      var possibleTargets = [];
-      for (var i = this._objects.length; i--; ) {
-        if (this._objects[i] && this._objects[i].visible && this.containsPoint(e, this._objects[i])) {
-          if (this.perPixelTargetFind && this._objects[i].perPixelTargetFind) {
-            possibleTargets[possibleTargets.length] = this._objects[i];
-          }
-          else {
-            target = this._objects[i];
-            this.relatedTarget = target;
-            break;
-          }
-        }
-      }
-      for (var j = 0, len = possibleTargets.length; j < len; j++) {
-        pointer = this.getPointer(e);
-        var isTransparent = this.isTargetTransparent(possibleTargets[j], pointer.x, pointer.y);
-        if (!isTransparent) {
-          target = possibleTargets[j];
-          this.relatedTarget = target;
-          break;
-        }
+      image = this.contextCache.getImageData(pointer.x - findTargetPatternRadius, pointer.y - findTargetPatternRadius, findTargetPatternWidth, findTargetPatternWidth);
+      imageData = image.data;
+      target = null;
+      for(i = 0; target == null && i < findTargetPatternLength; i++){
+        x = findTargetPattern[i];
+        target = this.getObjectBySerial(imageData[x+0], imageData[x+1], imageData[x+2], imageData[x+3]);
       }
 
       return target;
-      */
     },
     /**
      * Returns pointer coordinates relative to canvas.
@@ -7611,8 +7590,6 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       else {
         addListener(this.lowerCanvasEl, 'mousedown', this._onMouseDown);
         addListener(this.lowerCanvasEl, 'mousemove', this._onMouseMove);
-
-        //fabric.window.setTimeout(this.checkSpeed, 10);
       }
     },
 
@@ -7794,7 +7771,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
         // determine if it's a drag or rotate case
         this.stateful && target.saveState();
 
-        if ((corner = target._findTargetCorner(e, this._offset))) {
+        if ((corner = target._findTargetCorner(pointer, this._offset))) {
           this.onBeforeScaleRotate(target);
         }
 
@@ -7965,11 +7942,12 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
         return false;
       }
       else {
-        var activeGroup = this.getActiveGroup();
+        var activeGroup = this.getActiveGroup(),
+            pointer = this.getPointer(e);
         // only show proper corner when group selection is not active
         var corner = target._findTargetCorner
                       && (!activeGroup || !activeGroup.contains(target))
-                      && target._findTargetCorner(e, this._offset);
+                      && target._findTargetCorner(pointer, this._offset);
 
         if (!corner) {
           this._setCursor(target.hoverCursor || this.hoverCursor);
@@ -10166,12 +10144,11 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * @param {Object} offset Canvas offset
      * @return {String|Boolean} corner code (tl, tr, bl, br, etc.), or false if nothing is found
      */
-    _findTargetCorner: function(e, offset) {
+    _findTargetCorner: function(pointer, offset) {
       if (!this.hasControls || !this.active) return false;
 
-      var pointer = getPointer(e, this.canvas.lowerCanvasEl),
-          ex = pointer.x - offset.left,
-          ey = pointer.y - offset.top,
+      var ex = pointer.x,
+          ey = pointer.y,
           xPoints,
           lines;
 
