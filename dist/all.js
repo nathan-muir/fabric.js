@@ -11960,6 +11960,25 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       _toString = Object.prototype.toString,
       drawArc = fabric.util.drawArc;
 
+  fabric.pathCache = null;
+  if (!!Path2D){
+    function Path2DCache(){
+      var self = this;
+      self.dict = {};
+
+    }
+
+    Path2DCache.prototype.get = function Path2DCache_get(path){
+      var self = this;
+      if (!(path in self.dict)){
+        return self.dict[path] = new Path2D(path);
+      }
+      return self.dict[path];
+    };
+
+    fabric.pathCache = new Path2DCache()
+  }
+
   if (fabric.Path) {
     fabric.warn('fabric.Path is already defined');
     return;
@@ -12016,15 +12035,13 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       var fromArray = _toString.call(path) === '[object Array]';
 
-      this.path = fromArray
-        ? path
-        // one of commands (m,M,l,L,q,Q,c,C,etc.) followed by non-command characters (i.e. command values)
-        : path.match && path.match(/[mzlhvcsqta][^mzlhvcsqta]*/gi);
+      this.path2d = null;
 
-      if (!this.path) return;
-
-      if (!fromArray) {
-        this.path = this._parsePath();
+      if (fromArray){
+        this.path = path;
+      } else //if (path.match && path.match(/[mzlhvcsqta][^mzlhvcsqta]*/gi)){
+      {
+        this.path = this._parsePath(path)
       }
       this._initializePath(options);
 
@@ -12404,16 +12421,26 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         ctx.fillStyle = this._serialToRgb();
         ctx.strokeStyle = this._serialToRgb();
       }
+      if (typeof this.path === "function"){
+        ctx.translate(-((this.width / 2) + this.pathOffset.x), -((this.height / 2) + this.pathOffset.y));
+        if (this.fill){
+          ctx.fill(this.path);
+        }
+        if (this.stroke){
+          ctx.stroke(this.stroke);
+        }
+      } else {
+        this._setShadow(ctx);
+        this.clipTo && fabric.util.clipContext(this, ctx);
+        ctx.beginPath();
 
-      this._setShadow(ctx);
-      this.clipTo && fabric.util.clipContext(this, ctx);
-      ctx.beginPath();
+        this._render(ctx);
+        this._renderFill(ctx);
+        this._renderStroke(ctx);
+        this.clipTo && ctx.restore();
+        this._removeShadow(ctx);
+      }
 
-      this._render(ctx);
-      this._renderFill(ctx);
-      this._renderStroke(ctx);
-      this.clipTo && ctx.restore();
-      this._removeShadow(ctx);
 
       if (!hitCanvasMode && !noTransform && this.active) {
         this.drawBorders(ctx);
@@ -12510,7 +12537,10 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
     /**
      * @private
      */
-    _parsePath: function() {
+    _parsePath: function(path) {
+      if (fabric.pathCache){
+        return fabric.pathCache.get(path);
+      }
       var result = [ ],
           coords = [ ],
           currentPath,
@@ -12519,8 +12549,8 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
           match,
           coordsStr;
 
-      for (var i = 0, coordsParsed, len = this.path.length; i < len; i++) {
-        currentPath = this.path[i];
+      for (var i = 0, coordsParsed, len = path.length; i < len; i++) {
+        currentPath = path[i];
 
         coordsStr = currentPath.slice(1).trim();
         coords.length = 0;
