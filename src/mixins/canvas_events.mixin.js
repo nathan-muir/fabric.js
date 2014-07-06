@@ -26,6 +26,52 @@
 
   fabric.util.object.extend(fabric.Canvas.prototype, /** @lends fabric.Canvas.prototype */ {
 
+    pointerCurrentTarget: null,
+
+    pointerCurrent: {},
+
+    pointerPrevious: {},
+
+    velocity: null,
+
+    requiredVelocity: 10,
+
+    checkSpeedRunning: false,
+
+    checkSpeed: function(){
+      var target;
+      if (!this._currentTransform && this.pointerPrevious.x != null && this.pointerPrevious.y != null) {
+        var speed = (Math.sqrt(Math.pow(this.pointerPrevious.x - this.pointerCurrent.x, 2) + Math.pow(this.pointerPrevious.y - this.pointerCurrent.y, 2)) / 10) * 1000;
+        if (speed <= this.requiredVelocity) {
+          target = this.findTarget(this.pointerCurrent, null);
+          if (this.pointerCurrentTarget !== target){
+            if (target && target.selectable) {
+              this.pointerCurrentTarget = target;
+              this._setCursor(target.hoverCursor || this.hoverCursor);
+              this.fire('object:hover', {target: target});
+              target.fire('hover', {});
+            } else {
+              this.pointerCurrentTarget = null;
+              this._setCursor(this.priorityCursor || this.defaultCursor);
+              this.fire('object:hover', {target: null});
+            }
+          }
+        }
+        if (this.pointerPrevious.x == this.pointerCurrent.x && this.pointerPrevious.y == this.pointerCurrent.y){
+          this.checkSpeedRunning = false;
+          return;
+        }
+      }
+      this.pointerPrevious.x = this.pointerCurrent.x;
+      this.pointerPrevious.y = this.pointerCurrent.y;
+
+      if (this.pointerPrevious.x < 0 || this.pointerPrevious.y < 0 || this.pointerPrevious.x > this.width || this.pointerPrevious.y > this.height){
+        this.checkSpeedRunning = false;
+        return;
+      }
+      fabric.window.setTimeout(this.checkSpeed, 10);
+    },
+
     /**
      * Adds mouse listeners to canvas
      * @private
@@ -37,6 +83,7 @@
       this._onMouseMove = this._onMouseMove.bind(this);
       this._onMouseUp = this._onMouseUp.bind(this);
       this._onResize = this._onResize.bind(this);
+      this.checkSpeed = this.checkSpeed.bind(this);
 
       this._onGesture = function(e, s) {
         _this.__onTransformGesture(e, s);
@@ -195,7 +242,7 @@
      */
     __onMouseDown: function (e) {
 
-      var pointer;
+      var pointer, target, corner;
 
       // accept only left clicks
       var isLeftClick  = 'which' in e ? e.which === 1 : e.button === 1;
@@ -215,8 +262,8 @@
       // ignore if some object is being transformed at this moment
       if (this._currentTransform) return;
 
-      var target = this.findTarget(e), corner;
       pointer = this.getPointer(e);
+      target = this.findTarget(pointer);
 
       if (this._shouldClearSelection(e, target)) {
         this._groupSelector = {
@@ -236,7 +283,7 @@
         // determine if it's a drag or rotate case
         this.stateful && target.saveState();
 
-        if ((corner = target._findTargetCorner(e, this._offset))) {
+        if ((corner = target._findTargetCorner(pointer, this._offset))) {
           this.onBeforeScaleRotate(target);
         }
 
@@ -273,11 +320,17 @@
       */
     __onMouseMove: function (e) {
 
-      var target, pointer;
+      var target,
+          pointer = this.getPointer(e);
+      this.pointerCurrent = pointer;
+
+      if (!this.checkSpeedRunning){
+        this.checkSpeedRunning = true;
+        fabric.window.setTimeout(this.checkSpeed, 10);
+      }
 
       if (this.isDrawingMode) {
         if (this._isCurrentlyDrawing) {
-          pointer = this.getPointer(e);
           this.freeDrawingBrush.onMouseMove(pointer);
         }
         this._setCursor(this.freeDrawingCursor);
@@ -289,10 +342,8 @@
 
       // We initially clicked in an empty area, so we draw a box for multiple selection.
       if (groupSelector) {
-        pointer = getPointer(e, this.lowerCanvasEl);
-
-        groupSelector.left = pointer.x - this._offset.left - groupSelector.ex;
-        groupSelector.top = pointer.y - this._offset.top - groupSelector.ey;
+        groupSelector.left = pointer.x - groupSelector.ex;
+        groupSelector.top = pointer.y - groupSelector.ey;
         this.renderTop();
       }
       else if (!this._currentTransform) {
@@ -300,30 +351,30 @@
         // what part of the pictures we are hovering to change the caret symbol.
         // We won't do that while dragging or rotating in order to improve the
         // performance.
-        var self = this;
-
-        target = this.findTarget(e, null);
-        if (!target || (target && !target.selectable)) {
-          // image/text was hovered-out from, we remove its borders
-          for (var i = self._objects.length; i--; ) {
-            if (self._objects[i] && !self._objects[i].active) {
-              self._objects[i].set('active', false);
+        if (this.pointerCurrentTarget){
+          target = this.findTarget(pointer, null);
+          if (!target || (target && !target.selectable)) {
+            // image/text was hovered-out from, we remove its borders
+            for (var i = this._objects.length; i--; ) {
+              if (this._objects[i] && !this._objects[i].active) {
+                this._objects[i].set('active', false);
+              }
             }
+            this.pointerCurrentTarget = null;
+            this._setCursor(this.priorityCursor || this.defaultCursor);
+            this.fire('object:hover', {target: null, e:e});
+          } else {
+            // XX - this will be done by checkCursor
+            //this._setCursorFromEvent(e, target);
+            //this.fire('object:hover', {target: target, e:e});
+            //target.fire('hover', {e: e});
           }
-          this._setCursor(this.priorityCursor || this.defaultCursor);
-          self.fire('object:hover', {target: null, e:e});
-        } else {
-          self._setCursorFromEvent(e, target);
-          self.fire('object:hover', {target: target, e:e});
-          target.fire('hover', {e: e});
         }
       }
       else {
         // object is being transformed (scaled/rotated/moved/etc.)
-        pointer = getPointer(e, this.lowerCanvasEl);
-
-        var x = pointer.x,
-            y = pointer.y,
+        var x = pointer.x + this._offset.left,
+            y = pointer.y + this._offset.top,
             reset = false,
             transform = this._currentTransform;
 
@@ -403,11 +454,12 @@
         return false;
       }
       else {
-        var activeGroup = this.getActiveGroup();
+        var activeGroup = this.getActiveGroup(),
+            pointer = this.getPointer(e);
         // only show proper corner when group selection is not active
         var corner = target._findTargetCorner
                       && (!activeGroup || !activeGroup.contains(target))
-                      && target._findTargetCorner(e, this._offset);
+                      && target._findTargetCorner(pointer, this._offset);
 
         if (!corner) {
           this._setCursor(target.hoverCursor || this.hoverCursor);

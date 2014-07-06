@@ -18,7 +18,8 @@
         return;
       }
 
-      var target = this.findTarget(e);
+      var pointer = this.getPointer(e),
+          target = this.findTarget(pointer);
       if ('undefined' !== typeof target) {
         this.onBeforeScaleRotate(target);
         this._rotateObjectByAngle(self.rotation);
