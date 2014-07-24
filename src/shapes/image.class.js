@@ -83,9 +83,10 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      * @param {Boolean} [noTransform] When true, context is not transformed
      */
-    render: function(ctx, noTransform) {
+    render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if object is not visible
-      if (!this.visible) return;
+      if (!this.visible || (hitCanvasMode && this.noHitMode)) return;
+
 
       ctx.save();
       var m = this.transformMatrix;
