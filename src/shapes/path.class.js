@@ -96,13 +96,13 @@
 
       var fromArray = _toString.call(path) === '[object Array]';
 
-      this.path2d = null;
-
       if (fromArray){
         this.path = path;
-      } else //if (path.match && path.match(/[mzlhvcsqta][^mzlhvcsqta]*/gi)){
-      {
-        this.path = this._parsePath(path)
+        this.path2d = false;
+      } else {
+        var _tmp = this._parsePath(path);
+        this.path = _tmp[0];
+        this.path2d = _tmp[1];
       }
       this._initializePath(options);
 
@@ -482,13 +482,13 @@
         ctx.fillStyle = this._serialToRgb();
         ctx.strokeStyle = this._serialToRgb();
       }
-      if (typeof this.path === "function"){
+      if (this.path2d){
         ctx.translate(-((this.width / 2) + this.pathOffset.x), -((this.height / 2) + this.pathOffset.y));
         if (this.fill){
           ctx.fill(this.path);
         }
         if (this.stroke){
-          ctx.stroke(this.stroke);
+          ctx.stroke(this.path);
         }
       } else {
         this._setShadow(ctx);
@@ -600,9 +600,10 @@
      */
     _parsePath: function(path) {
       if (fabric.pathCache){
-        return fabric.pathCache.get(path);
+        return [fabric.pathCache.get(path), true];
       }
-      var result = [ ],
+      var path_pieces = path.match(/[mzlhvcsqta][^mzlhvcsqta]*/gi),
+          result = [ ],
           coords = [ ],
           currentPath,
           parsed,
@@ -610,8 +611,8 @@
           match,
           coordsStr;
 
-      for (var i = 0, coordsParsed, len = path.length; i < len; i++) {
-        currentPath = path[i];
+      for (var i = 0, coordsParsed, len = path_pieces.length; i < len; i++) {
+        currentPath = path_pieces[i];
 
         coordsStr = currentPath.slice(1).trim();
         coords.length = 0;
@@ -642,7 +643,7 @@
         }
       }
 
-      return result;
+      return [result, false];
     },
 
     /**
