@@ -7331,16 +7331,17 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * @return {fabric.Canvas} thisArg
      * @chainable
      */
-    setActiveObject: function (object, e) {
+    setActiveObject: function (object, e, offset) {
       if (this._activeObject) {
         this._activeObject.set('active', false);
       }
       this._activeObject = object;
+      this._activeOffset = offset;
       object.set('active', true);
 
       /*this.renderAll();*/
 
-      this.fire('object:selected', { target: object, e: e });
+      this.fire('object:selected', { target: object, e: e, offset: offset });
       object.fire('selected', { e: e });
       return this;
     },
@@ -7730,7 +7731,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      */
     __onMouseDown: function (e) {
 
-      var pointer, target, corner;
+      var pointer, target, corner, offset;
 
       // accept only left clicks
       var isLeftClick  = 'which' in e ? e.which === 1 : e.button === 1;
@@ -7752,7 +7753,12 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
 
       pointer = this.getPointer(e);
       target = this.findTarget(pointer);
-
+      if (target){
+        offset = {
+          x: pointer.x - target.left,
+          y: pointer.y - target.top
+        }
+      }
       if (this._shouldClearSelection(e, target)) {
         this._groupSelector = {
           ex: pointer.x,
@@ -7761,7 +7767,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
           left: 0
         };
         this.deactivateAllWithDispatch();
-        target && target.selectable && this.setActiveObject(target, e);
+        target && target.selectable && this.setActiveObject(target, e, offset);
       }
       else if (this._shouldHandleGroupLogic(e, target)) {
         this._handleGroupLogic(e, target);
@@ -7777,7 +7783,9 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
 
         if (target !== this.getActiveGroup() && target !== this.getActiveObject()) {
           this.deactivateAll();
-          this.setActiveObject(target, e);
+          this.setActiveObject(target, e, offset);
+        } else {
+          this._activeOffset = offset;
         }
 
         this._setupCurrentTransform(e, target);
@@ -7920,7 +7928,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
         else {
           this._translateObject(x, y);
 
-          this.fire('object:moving', { target: target, e: e});
+          this.fire('object:moving', { target: target, e: e, offset: this._activeOffset });
           target.fire('moving', { e: e });
           this._setCursor(this.moveCursor);
         }

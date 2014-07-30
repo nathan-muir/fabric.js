@@ -882,16 +882,17 @@
      * @return {fabric.Canvas} thisArg
      * @chainable
      */
-    setActiveObject: function (object, e) {
+    setActiveObject: function (object, e, offset) {
       if (this._activeObject) {
         this._activeObject.set('active', false);
       }
       this._activeObject = object;
+      this._activeOffset = offset;
       object.set('active', true);
 
       /*this.renderAll();*/
 
-      this.fire('object:selected', { target: object, e: e });
+      this.fire('object:selected', { target: object, e: e, offset: offset });
       object.fire('selected', { e: e });
       return this;
     },

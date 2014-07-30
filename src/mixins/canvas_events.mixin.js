@@ -242,7 +242,7 @@
      */
     __onMouseDown: function (e) {
 
-      var pointer, target, corner;
+      var pointer, target, corner, offset;
 
       // accept only left clicks
       var isLeftClick  = 'which' in e ? e.which === 1 : e.button === 1;
@@ -264,7 +264,12 @@
 
       pointer = this.getPointer(e);
       target = this.findTarget(pointer);
-
+      if (target){
+        offset = {
+          x: pointer.x - target.left,
+          y: pointer.y - target.top
+        }
+      }
       if (this._shouldClearSelection(e, target)) {
         this._groupSelector = {
           ex: pointer.x,
@@ -273,7 +278,7 @@
           left: 0
         };
         this.deactivateAllWithDispatch();
-        target && target.selectable && this.setActiveObject(target, e);
+        target && target.selectable && this.setActiveObject(target, e, offset);
       }
       else if (this._shouldHandleGroupLogic(e, target)) {
         this._handleGroupLogic(e, target);
@@ -289,7 +294,9 @@
 
         if (target !== this.getActiveGroup() && target !== this.getActiveObject()) {
           this.deactivateAll();
-          this.setActiveObject(target, e);
+          this.setActiveObject(target, e, offset);
+        } else {
+          this._activeOffset = offset;
         }
 
         this._setupCurrentTransform(e, target);
@@ -432,7 +439,7 @@
         else {
           this._translateObject(x, y);
 
-          this.fire('object:moving', { target: target, e: e});
+          this.fire('object:moving', { target: target, e: e, offset: this._activeOffset });
           target.fire('moving', { e: e });
           this._setCursor(this.moveCursor);
         }
