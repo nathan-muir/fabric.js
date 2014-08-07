@@ -11998,12 +11998,11 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       drawArc = fabric.util.drawArc;
 
   fabric.pathCache = null;
-  if (!!Path2D){
-    function Path2DCache(){
+  if (typeof fabric.window.Path2D != "undefined"){
+    var Path2DCache = function Path2DCache_constructor(){
       var self = this;
       self.dict = {};
-
-    }
+    };
 
     Path2DCache.prototype.get = function Path2DCache_get(path){
       var self = this;
