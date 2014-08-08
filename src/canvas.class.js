@@ -808,7 +808,11 @@
       this.cacheCanvasEl = this._createCanvasElement();
       this.cacheCanvasEl.setAttribute('width', this.width);
       this.cacheCanvasEl.setAttribute('height', this.height);
+      this.cacheCanvasEl.style = "image-rendering: optimizeSpeed;image-rendering: -moz-crisp-edges;image-rendering: -webkit-optimize-contrast;image-rendering: -o-crisp-edges;image-rendering: optimize-contrast;-ms-interpolation-mode: nearest-neighbor;";
       this.contextCache = this.cacheCanvasEl.getContext('2d');
+      this.contextCache.imageSmoothingEnabled && (this.contextCache.imageSmoothingEnabled = false);
+      this.contextCache.webkitImageSmoothingEnabled && (this.contextCache.webkitImageSmoothingEnabled = false);
+      this.contextCache.mozImageSmoothingEnabled && (this.contextCache.mozImageSmoothingEnabled = false);
     },
 
     /**
