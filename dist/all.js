@@ -12461,6 +12461,11 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         ctx.fillStyle = this._serialToRgb();
         ctx.strokeStyle = this._serialToRgb();
       }
+      var tmpPath = null;
+      if (hitCanvasMode && this.hitPath){
+        tmpPath = this.path;
+        this.path = this.hitPath;
+      }
       if (this.path2d){
         ctx.translate(-((this.width / 2) + this.pathOffset.x), -((this.height / 2) + this.pathOffset.y));
         if (this.fill){
@@ -12479,6 +12484,9 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         this._renderStroke(ctx);
         this.clipTo && ctx.restore();
         this._removeShadow(ctx);
+      }
+      if(hitCanvasMode && this.hitPath){
+        this.path = tmpPath;
       }
 
 
