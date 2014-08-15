@@ -183,19 +183,21 @@
      * @chainable
      */
     setOverlayImage: function (url, callback, options) { // TODO (kangax): test callback
+      var _this = this;
       fabric.util.loadImage(url, function(img) {
-        this.overlayImage = img;
+        _this.overlayImage = img;
         if (options && ('overlayImageLeft' in options)) {
-          this.overlayImageLeft = options.overlayImageLeft;
+          _this.overlayImageLeft = options.overlayImageLeft;
         }
         if (options && ('overlayImageTop' in options)) {
-          this.overlayImageTop = options.overlayImageTop;
+          _this.overlayImageTop = options.overlayImageTop;
         }
         callback && callback();
-      }, this);
+      });
 
       return this;
     },
+
 
     /**
      * Sets background image for this canvas
@@ -206,16 +208,17 @@
      * @chainable
      */
     setBackgroundImage: function (url, callback, options) {
+      var _this = this;
       fabric.util.loadImage(url, function(img) {
-        this.backgroundImage = img;
+        _this.backgroundImage = img;
         if (options && ('backgroundImageOpacity' in options)) {
-          this.backgroundImageOpacity = options.backgroundImageOpacity;
+          _this.backgroundImageOpacity = options.backgroundImageOpacity;
         }
         if (options && ('backgroundImageStretch' in options)) {
-          this.backgroundImageStretch = options.backgroundImageStretch;
+          _this.backgroundImageStretch = options.backgroundImageStretch;
         }
         callback && callback();
-      }, this);
+      });
 
       return this;
     },

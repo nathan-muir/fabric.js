@@ -1712,25 +1712,30 @@ fabric.Collection = {
     * Loads image element from given url and passes it to a callback
     * @memberOf fabric.util
     * @param {String} url URL representing an image
-    * @param {Function} callback Callback; invoked with loaded image
-    * @param {Any} context optional Context to invoke callback in
+    * @param {Function} success Callback; invoked with loaded image
+    * @param {Function} failure Callback; invocke if failed to load
     */
-  function loadImage(url, callback, context) {
+  function loadImage(url, success, failure) {
     if (url) {
       fabric.window.setTimeout(function(){
         var img = fabric.util.createImage();
         /** @ignore */
         img.crossOrigin = "anonymous";
         img.onload = function () {
-          callback && callback.call(context, img);
+          success && success.call(null, img);
           img.onload = null;
         };
+        img.onerror = function(e){
+          failure && failure.call(null, e);
+          img.onerror = null;
+          img.onload = null;
+        }
         img.src = url;
       },0)
     }
     else {
       fabric.window.setTimeout(function(){
-        callback && callback.call(context, url);
+        success && success.call(null, url);
       }, 0);
     }
   }
@@ -1739,16 +1744,25 @@ fabric.Collection = {
     * Loads image element from given url and passes it to a callback
     * @memberOf fabric.util
     * @param {String} url URL representing an image
-    * @param {Function} callback Callback; invoked with loaded image
-    * @param {Any} context optional Context to invoke callback in
+    * @param {Function} success Callback; invoked with loaded scripte
+    * @param {Function} failure Callback; invoked if failed to load
     */
-  function loadScript(url, callback, context) {
+  function loadScript(url, success, failure) {
     fabric.window.setTimeout(function(){
       var script = fabric.util.createScript(),
         head = document.getElementsByTagName("head")[0] || document.documentElement;
       script.onload = function () {
-        callback && callback.call(context, script);
+        success && success.call(null, script);
         script.onload = null;
+        script.onerror = null;
+        if (head && script.parentNode){
+          head.removeChild(script);
+        }
+      };
+      script.onerror = function(e){
+        failure && failure.call(null, e);
+        script.onload = null;
+        script.onerror = null;
         if (head && script.parentNode){
           head.removeChild(script);
         }
@@ -5437,19 +5451,21 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * @chainable
      */
     setOverlayImage: function (url, callback, options) { // TODO (kangax): test callback
+      var _this = this;
       fabric.util.loadImage(url, function(img) {
-        this.overlayImage = img;
+        _this.overlayImage = img;
         if (options && ('overlayImageLeft' in options)) {
-          this.overlayImageLeft = options.overlayImageLeft;
+          _this.overlayImageLeft = options.overlayImageLeft;
         }
         if (options && ('overlayImageTop' in options)) {
-          this.overlayImageTop = options.overlayImageTop;
+          _this.overlayImageTop = options.overlayImageTop;
         }
         callback && callback();
-      }, this);
+      });
 
       return this;
     },
+
 
     /**
      * Sets background image for this canvas
@@ -5460,16 +5476,17 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      * @chainable
      */
     setBackgroundImage: function (url, callback, options) {
+      var _this = this;
       fabric.util.loadImage(url, function(img) {
-        this.backgroundImage = img;
+        _this.backgroundImage = img;
         if (options && ('backgroundImageOpacity' in options)) {
-          this.backgroundImageOpacity = options.backgroundImageOpacity;
+          _this.backgroundImageOpacity = options.backgroundImageOpacity;
         }
         if (options && ('backgroundImageStretch' in options)) {
-          this.backgroundImageStretch = options.backgroundImageStretch;
+          _this.backgroundImageStretch = options.backgroundImageStretch;
         }
         callback && callback();
-      }, this);
+      });
 
       return this;
     },
