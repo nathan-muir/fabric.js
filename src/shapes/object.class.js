@@ -199,6 +199,13 @@
     strokeWidth:              1,
 
     /**
+     * Whether stroke width should vary with scale
+     * @type Number
+     * @default
+     */
+    strokeWidthInvariant:     false,
+
+    /**
      * Array specifying dash pattern of an object's stroke (stroke must be defined)
      * @type Array
      */
@@ -709,7 +716,7 @@
 
       if (hitCanvasMode && this.noHitMode) return;
 
-      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
+      if ((this.left + this.currentWidth < 0 || this.top + this.currentHeight < 0 || this.left - this.currentWidth > ctx.canvas.width || this.top - this.currentHeight > ctx.canvas.height)) return;
 
       ctx.save();
 
@@ -723,7 +730,11 @@
       }
 
       if (this.stroke) {
-        ctx.lineWidth = this.strokeWidth;
+        if (this.strokeWidthInvariant){
+          ctx.lineWidth = this.strokeWidth / this.scaleX;
+        } else {
+          ctx.lineWidth = this.strokeWidth;
+        }
         ctx.lineCap = this.strokeLineCap;
         ctx.lineJoin = this.strokeLineJoin;
         ctx.miterLimit = this.strokeMiterLimit;
