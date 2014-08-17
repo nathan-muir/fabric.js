@@ -8455,6 +8455,13 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
     strokeWidth:              1,
 
     /**
+     * Whether stroke width should vary with scale
+     * @type Number
+     * @default
+     */
+    strokeWidthInvariant:     false,
+
+    /**
      * Array specifying dash pattern of an object's stroke (stroke must be defined)
      * @type Array
      */
@@ -8965,7 +8972,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
 
       if (hitCanvasMode && this.noHitMode) return;
 
-      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
+      if ((this.left + this.currentWidth < 0 || this.top + this.currentHeight < 0 || this.left - this.currentWidth > ctx.canvas.width || this.top - this.currentHeight > ctx.canvas.height)) return;
 
       ctx.save();
 
@@ -8979,7 +8986,11 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       }
 
       if (this.stroke) {
-        ctx.lineWidth = this.strokeWidth;
+        if (this.strokeWidthInvariant){
+          ctx.lineWidth = this.strokeWidth / this.scaleX;
+        } else {
+          ctx.lineWidth = this.strokeWidth;
+        }
         ctx.lineCap = this.strokeLineCap;
         ctx.lineJoin = this.strokeLineJoin;
         ctx.miterLimit = this.strokeMiterLimit;
@@ -10019,12 +10030,12 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
     setCoords: function() {
 
       var strokeWidth = this.strokeWidth > 1 ? this.strokeWidth : 0,
-          padding = this.padding,
-          theta = degreesToRadians(this.angle);
+          padding = this.padding;
 
       this.currentWidth = (this.width + strokeWidth) * this.scaleX + padding * 2;
       this.currentHeight = (this.height + strokeWidth) * this.scaleY + padding * 2;
-
+      this.oCoords = {};
+      /*
       // If width is negative, make postive. Fixes path selection issue
       if (this.currentWidth < 0) {
         this.currentWidth = Math.abs(this.currentWidth);
@@ -10106,6 +10117,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       // set coordinates of the draggable boxes in the corners used to scale/rotate the image
       this._setCornerCoords && this._setCornerCoords();
 
+      */
       return this;
     }
   });
@@ -11577,7 +11589,8 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
   var fabric = global.fabric || (global.fabric = { }),
       toFixed = fabric.util.toFixed,
-      min = fabric.util.array.min;
+      min = fabric.util.array.min,
+      path2dSupported = (typeof fabric.window.Path2D != "undefined");
 
   if (fabric.Polyline) {
     fabric.warn('fabric.Polyline is already defined');
@@ -11599,18 +11612,22 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
     type: 'polyline',
 
     /**
+     * @type Path2D
+     */
+    path2d: null,
+
+    /**
      * Constructor
      * @param {Array} points Array of points
      * @param {Object} [options] Options object
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      * @return {fabric.Polyline} thisArg
      */
-    initialize: function(points, options, skipOffset) {
+    initialize: function(points, options) {
       options = options || { };
 
       this.callSuper('initialize', options);
       this.points = points;
-      this._calcDimensions(skipOffset);
+      this._calcDimensions();
       this.setCoords();
     },
     /**
@@ -11621,16 +11638,15 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
     _set: function(key, value) {
       this[key] = value;
       if (key == "points") {
-        this._calcDimensions(false);
+        this._calcDimensions();
       }
       return this;
     },
     /**
      * @private
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      */
-    _calcDimensions: function(skipOffset) {
-      return fabric.Polygon.prototype._calcDimensions.call(this, skipOffset);
+    _calcDimensions: function() {
+      return fabric.Polygon.prototype._calcDimensions.call(this);
     },
 
     /**
@@ -11679,16 +11695,37 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _render: function(ctx) {
+      if (path2dSupported){ //assumed `supportsLineDash`
+        if (!this.path2d){
+          this.path2d = new Path2D();
+          this.__render(this.path2d);
+        }
+        this.fill && ctx.fill(this.path2d);
+        if (this.stroke || this.strokeDashArray){
+          ctx.save();
+          if (this.strokeDashArray) {
+            ctx.setLineDash(this.strokeDashArray)
+          }
+          ctx.stroke(this.path2d);
+          ctx.restore();
+        }
+      } else {
+        ctx.beginPath();
+        this.__render(ctx);
+        this._renderFill(ctx);
+        if (this.stroke || this.strokeDashArray) {
+          this._renderStroke(ctx);
+        }
+      }
+    },
+
+    __render: function(ctx){
       var point;
-      ctx.beginPath();
       ctx.moveTo(this.points[0].x, this.points[0].y);
       for (var i = 0, len = this.points.length; i < len; i++) {
         point = this.points[i];
         ctx.lineTo(point.x, point.y);
       }
-
-      this._renderFill(ctx);
-      this._renderStroke(ctx);
     },
 
     /**
@@ -11776,7 +11813,8 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       extend = fabric.util.object.extend,
       min = fabric.util.array.min,
       max = fabric.util.array.max,
-      toFixed = fabric.util.toFixed;
+      toFixed = fabric.util.toFixed,
+      path2dSupported = (typeof fabric.window.Path2D != "undefined");
 
   if (fabric.Polygon) {
     fabric.warn('fabric.Polygon is already defined');
@@ -11798,10 +11836,14 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
     type: 'polygon',
 
     /**
+     * @type Path2D
+     */
+    path2d: null,
+
+    /**
      * Constructor
      * @param {Array} points Array of points
      * @param {Object} [options] Options object
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      * @return {fabric.Polygon} thisArg
      */
     initialize: function(points, options, skipOffset) {
@@ -11810,7 +11852,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       this.callSuper('initialize', options);
 
       this.points = points;
-      this._calcDimensions(skipOffset);
+      this._calcDimensions();
       this.setCoords();
     },
 
@@ -11822,15 +11864,14 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
     _set: function(key, value) {
       this[key] = value;
       if (key == "points") {
-        this._calcDimensions(false);
+        this._calcDimensions();
       }
       return this;
     },
     /**
      * @private
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      */
-    _calcDimensions: function(skipOffset) {
+    _calcDimensions: function() {
 
       var points = this.points,
           minX = min(points, 'x'),
@@ -11844,15 +11885,17 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       this.minX = minX;
       this.minY = minY;
 
-      if (skipOffset) return;
-
       this.left = this.width / 2 + this.minX;
       this.top = this.height / 2 + this.minY;
 
+      // clear path2d
+      this.path2d = null;
       // change points to offset polygon into a bounding box
-      this.points.forEach(function(p) {
-        p.x -= this.left;
-        p.y -= this.top;
+      this.points = this.points.map(function(p) {
+        return {
+          x: p.x - this.left,
+          y: p.y - this.top
+        };
       }, this);
     },
 
@@ -11904,20 +11947,40 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _render: function(ctx) {
+      if (path2dSupported){ //assumed `supportsLineDash`
+        if (!this.path2d){
+          this.path2d = new Path2D();
+          this.__render(this.path2d);
+        }
+        this.fill && ctx.fill(this.path2d);
+        if (this.stroke || this.strokeDashArray){
+          ctx.save();
+          if (this.strokeDashArray) {
+            ctx.setLineDash(this.strokeDashArray)
+          }
+          ctx.stroke(this.path2d);
+          ctx.restore();
+        }
+      } else {
+        ctx.beginPath();
+        this.__render(ctx);
+        this._renderFill(ctx);
+        if (this.stroke || this.strokeDashArray) {
+          this._renderStroke(ctx);
+        }
+      }
+
+    },
+
+    __render: function(ctx){
       var point;
-      ctx.beginPath();
       ctx.moveTo(this.points[0].x, this.points[0].y);
       for (var i = 0, len = this.points.length; i < len; i++) {
         point = this.points[i];
         ctx.lineTo(point.x, point.y);
       }
-      this._renderFill(ctx);
-      if (this.stroke || this.strokeDashArray) {
-        ctx.closePath();
-        this._renderStroke(ctx);
-      }
+      ctx.closePath();
     },
-
     /**
      * @private
      * @param {CanvasRenderingContext2D} ctx Context to render on

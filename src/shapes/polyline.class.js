@@ -4,7 +4,8 @@
 
   var fabric = global.fabric || (global.fabric = { }),
       toFixed = fabric.util.toFixed,
-      min = fabric.util.array.min;
+      min = fabric.util.array.min,
+      path2dSupported = (typeof fabric.window.Path2D != "undefined");
 
   if (fabric.Polyline) {
     fabric.warn('fabric.Polyline is already defined');
@@ -26,18 +27,22 @@
     type: 'polyline',
 
     /**
+     * @type Path2D
+     */
+    path2d: null,
+
+    /**
      * Constructor
      * @param {Array} points Array of points
      * @param {Object} [options] Options object
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      * @return {fabric.Polyline} thisArg
      */
-    initialize: function(points, options, skipOffset) {
+    initialize: function(points, options) {
       options = options || { };
 
       this.callSuper('initialize', options);
       this.points = points;
-      this._calcDimensions(skipOffset);
+      this._calcDimensions();
       this.setCoords();
     },
     /**
@@ -48,16 +53,15 @@
     _set: function(key, value) {
       this[key] = value;
       if (key == "points") {
-        this._calcDimensions(false);
+        this._calcDimensions();
       }
       return this;
     },
     /**
      * @private
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      */
-    _calcDimensions: function(skipOffset) {
-      return fabric.Polygon.prototype._calcDimensions.call(this, skipOffset);
+    _calcDimensions: function() {
+      return fabric.Polygon.prototype._calcDimensions.call(this);
     },
 
     /**
@@ -106,16 +110,37 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _render: function(ctx) {
+      if (path2dSupported){ //assumed `supportsLineDash`
+        if (!this.path2d){
+          this.path2d = new Path2D();
+          this.__render(this.path2d);
+        }
+        this.fill && ctx.fill(this.path2d);
+        if (this.stroke || this.strokeDashArray){
+          ctx.save();
+          if (this.strokeDashArray) {
+            ctx.setLineDash(this.strokeDashArray)
+          }
+          ctx.stroke(this.path2d);
+          ctx.restore();
+        }
+      } else {
+        ctx.beginPath();
+        this.__render(ctx);
+        this._renderFill(ctx);
+        if (this.stroke || this.strokeDashArray) {
+          this._renderStroke(ctx);
+        }
+      }
+    },
+
+    __render: function(ctx){
       var point;
-      ctx.beginPath();
       ctx.moveTo(this.points[0].x, this.points[0].y);
       for (var i = 0, len = this.points.length; i < len; i++) {
         point = this.points[i];
         ctx.lineTo(point.x, point.y);
       }
-
-      this._renderFill(ctx);
-      this._renderStroke(ctx);
     },
 
     /**

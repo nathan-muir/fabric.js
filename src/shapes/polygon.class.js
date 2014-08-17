@@ -6,7 +6,8 @@
       extend = fabric.util.object.extend,
       min = fabric.util.array.min,
       max = fabric.util.array.max,
-      toFixed = fabric.util.toFixed;
+      toFixed = fabric.util.toFixed,
+      path2dSupported = (typeof fabric.window.Path2D != "undefined");
 
   if (fabric.Polygon) {
     fabric.warn('fabric.Polygon is already defined');
@@ -28,10 +29,14 @@
     type: 'polygon',
 
     /**
+     * @type Path2D
+     */
+    path2d: null,
+
+    /**
      * Constructor
      * @param {Array} points Array of points
      * @param {Object} [options] Options object
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      * @return {fabric.Polygon} thisArg
      */
     initialize: function(points, options, skipOffset) {
@@ -40,7 +45,7 @@
       this.callSuper('initialize', options);
 
       this.points = points;
-      this._calcDimensions(skipOffset);
+      this._calcDimensions();
       this.setCoords();
     },
 
@@ -52,15 +57,14 @@
     _set: function(key, value) {
       this[key] = value;
       if (key == "points") {
-        this._calcDimensions(false);
+        this._calcDimensions();
       }
       return this;
     },
     /**
      * @private
-     * @param {Boolean} [skipOffset] Whether points offsetting should be skipped
      */
-    _calcDimensions: function(skipOffset) {
+    _calcDimensions: function() {
 
       var points = this.points,
           minX = min(points, 'x'),
@@ -74,15 +78,17 @@
       this.minX = minX;
       this.minY = minY;
 
-      if (skipOffset) return;
-
       this.left = this.width / 2 + this.minX;
       this.top = this.height / 2 + this.minY;
 
+      // clear path2d
+      this.path2d = null;
       // change points to offset polygon into a bounding box
-      this.points.forEach(function(p) {
-        p.x -= this.left;
-        p.y -= this.top;
+      this.points = this.points.map(function(p) {
+        return {
+          x: p.x - this.left,
+          y: p.y - this.top
+        };
       }, this);
     },
 
@@ -134,20 +140,40 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _render: function(ctx) {
+      if (path2dSupported){ //assumed `supportsLineDash`
+        if (!this.path2d){
+          this.path2d = new Path2D();
+          this.__render(this.path2d);
+        }
+        this.fill && ctx.fill(this.path2d);
+        if (this.stroke || this.strokeDashArray){
+          ctx.save();
+          if (this.strokeDashArray) {
+            ctx.setLineDash(this.strokeDashArray)
+          }
+          ctx.stroke(this.path2d);
+          ctx.restore();
+        }
+      } else {
+        ctx.beginPath();
+        this.__render(ctx);
+        this._renderFill(ctx);
+        if (this.stroke || this.strokeDashArray) {
+          this._renderStroke(ctx);
+        }
+      }
+
+    },
+
+    __render: function(ctx){
       var point;
-      ctx.beginPath();
       ctx.moveTo(this.points[0].x, this.points[0].y);
       for (var i = 0, len = this.points.length; i < len; i++) {
         point = this.points[i];
         ctx.lineTo(point.x, point.y);
       }
-      this._renderFill(ctx);
-      if (this.stroke || this.strokeDashArray) {
-        ctx.closePath();
-        this._renderStroke(ctx);
-      }
+      ctx.closePath();
     },
-
     /**
      * @private
      * @param {CanvasRenderingContext2D} ctx Context to render on
