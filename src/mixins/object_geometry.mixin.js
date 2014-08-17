@@ -298,12 +298,12 @@
     setCoords: function() {
 
       var strokeWidth = this.strokeWidth > 1 ? this.strokeWidth : 0,
-          padding = this.padding,
-          theta = degreesToRadians(this.angle);
+          padding = this.padding;
 
       this.currentWidth = (this.width + strokeWidth) * this.scaleX + padding * 2;
       this.currentHeight = (this.height + strokeWidth) * this.scaleY + padding * 2;
-
+      this.oCoords = {};
+      /*
       // If width is negative, make postive. Fixes path selection issue
       if (this.currentWidth < 0) {
         this.currentWidth = Math.abs(this.currentWidth);
@@ -385,6 +385,7 @@
       // set coordinates of the draggable boxes in the corners used to scale/rotate the image
       this._setCornerCoords && this._setCornerCoords();
 
+      */
       return this;
     }
   });
