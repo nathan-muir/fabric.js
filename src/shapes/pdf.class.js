@@ -457,6 +457,7 @@
 
       // draw white bg for all pdfs
       ctx.save();
+      ctx.globalCompositeOperation = this.compOp;
       this.transform(ctx);
       ctx.beginPath();
       ctx.fillStyle = 'white';

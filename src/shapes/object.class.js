@@ -171,6 +171,13 @@
     fill:                     'rgb(0,0,0)',
 
     /**
+     * Composite Operation used on object
+     * @type String
+     * @default
+     */
+    compOp:                  'source-over',
+
+    /**
      * Fill rule used to fill an object
      * @type String
      * @default
@@ -719,6 +726,8 @@
       if ((this.left + this.currentWidth < 0 || this.top + this.currentHeight < 0 || this.left - this.currentWidth > ctx.canvas.width || this.top - this.currentHeight > ctx.canvas.height)) return;
 
       ctx.save();
+
+      ctx.globalCompositeOperation = this.compOp;
 
       var m = this.transformMatrix;
       if (m && !this.group) {
