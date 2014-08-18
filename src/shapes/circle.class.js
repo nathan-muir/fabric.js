@@ -38,6 +38,7 @@
 
       var diameter = this.get('radius') * 2;
       this.set('width', diameter).set('height', diameter);
+      this.setCoords();
     },
 
     /**
@@ -86,8 +87,11 @@
     _render: function(ctx, noTransform) {
       ctx.beginPath();
       // multiply by currently set alpha (the one that was set by path group where this object is contained, for example)
-      ctx.globalAlpha = this.group ? (ctx.globalAlpha * this.opacity) : this.opacity;
-      ctx.arc(noTransform ? this.left : 0, noTransform ? this.top : 0, this.radius, 0, piBy2, false);
+      if (noTransform){
+        ctx.arc(this.left, this.top, this.radius, 0, piBy2, false);
+      } else {
+        ctx.arc(0, 0, this.radius, 0, piBy2, false);
+      }
       ctx.closePath();
 
       this._renderFill(ctx);
@@ -95,28 +99,17 @@
     },
 
     /**
-     * Returns horizontal radius of an object (according to how an object is scaled)
-     * @return {Number}
+     * @private
+     * @param {String} key
+     * @param {Any} value
      */
-    getRadiusX: function() {
-      return this.get('radius') * this.get('scaleX');
-    },
-
-    /**
-     * Returns vertical radius of an object (according to how an object is scaled)
-     * @return {Number}
-     */
-    getRadiusY: function() {
-      return this.get('radius') * this.get('scaleY');
-    },
-
-    /**
-     * Sets radius of an object (and updates width accordingly)
-     * @return {Number}
-     */
-    setRadius: function(value) {
-      this.radius = value;
-      this.set('width', value * 2).set('height', value * 2);
+    _set: function(key, value) {
+      this[key] = value;
+      if (key == "radius") {
+        this.set('width', value * 2);
+        this.set('height', value * 2);
+      }
+      return this;
     },
 
     /**
