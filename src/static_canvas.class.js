@@ -608,11 +608,13 @@
       if (arguments.length === 0){
         this.renderMain = true;
         for (ln in this.layers){
-          this.renderLayers[ln] = true
+          if (!this.hiddenLayers[ln]){
+            this.renderLayers[ln] = true
+          }
         }
       } else if (layerName == null){
         this.renderMain = true
-      } else if (this.layers && layerName in this.layers){
+      } else if (this.layers && layerName in this.layers && !this.hiddenLayers[layerName]){
         this.renderLayers[layerName] = true
       }
 

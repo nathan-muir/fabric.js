@@ -30,6 +30,7 @@
     this._createCacheCanvas();
     this.layers = {};
     this.contexts = {};
+    this.hiddenLayers = {};
 
     fabric.Canvas.activeInstance = this;
   };
@@ -779,26 +780,57 @@
 
     /**
      * @param {String} name
+     * @param {Boolean} primary
      * @throws {CANVAS_INIT_ERROR} If canvas can not be initialized
      */
-    createLayer: function (name) {
+    createLayer: function (name, primary) {
       var lowerCanvasClass = this.lowerCanvasEl.className.replace(/\s*lower-canvas\s*/, ''),
           newLayer;
 
       if (name in this.layers){
         throw new Error("Layer already exists")
       }
+      if (primary){
+        newLayer = this.lowerCanvasEl;
+      } else {
+        newLayer = this._createCanvasElement();
+        fabric.util.addClass(newLayer, name + lowerCanvasClass);
 
-      newLayer = this._createCanvasElement();
-      fabric.util.addClass(newLayer, name + lowerCanvasClass);
+        this.wrapperEl.appendChild(newLayer);
 
-      this.wrapperEl.appendChild(newLayer);
+        this._copyCanvasStyle(this.lowerCanvasEl, newLayer);
+        this._applyCanvasStyle(newLayer);
+      }
 
-      this._copyCanvasStyle(this.lowerCanvasEl, newLayer);
-      this._applyCanvasStyle(newLayer);
 
       this.layers[name] = newLayer;
       this.contexts[name] = newLayer.getContext('2d');
+    },
+
+    hideLayer: function(layerName){
+      if (this.layers[layerName] && !this.hiddenLayers[layerName]){
+        this.hiddenLayers[layerName] = true;
+        if (this.renderLayers[layerName]){
+          delete this.renderLayers[layerName];
+        }
+        this.layers[layerName].style.display = "none";
+      }
+    },
+
+    showLayer: function(layerName){
+      if (this.layers[layerName] && this.hiddenLayers[layerName]){
+        this.hiddenLayers[layerName] = false;
+        this.layers[layerName].style.display = "";
+      }
+    },
+
+    showAllLayers: function(){
+      var layerName;
+      for (layerName in this.hiddenLayers){
+        if (this.hiddenLayers.hasOwnProperty(layerName)){
+          this.showLayer(layerName);
+        }
+      }
     },
 
     /**
