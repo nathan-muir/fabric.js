@@ -3,32 +3,17 @@
  */
 fabric.Collection = {
 
-  addSilent: function(){
-    var item;
-    this._objects.push.apply(this._objects, arguments);
-    for (var i = arguments.length; i--; ) {
-      item = arguments[i];
-        if (typeof item.layer != "undefined" &&  item.layer in this.contexts){
-          this._draw(this.contexts[item.layer], item);
-        } else if (typeof renderLayers[item.layer] != "undefined") {
-          this._draw(this.contextContainer, item);
-        }
-      this._onObjectAdded(arguments[i]);
-    }
-    return this;
-  },
+
   /**
-   * Adds objects to collection, then renders canvas (if `renderOnAddition` is not `false`)
-   * Objects should be instances of (or inherit from) fabric.Object
-   * @param [...] Zero or more fabric instances
+   * @param {fabric.Object} object
    * @return {Self} thisArg
    */
-  add: function () {
-    this._objects.push.apply(this._objects, arguments);
-    for (var i = arguments.length; i--; ) {
-      this._onObjectAdded(arguments[i]);
+  add: function (object) {
+    if (!object){
+      throw new Error("Must provide an item to fabric.Collection.add, got " + typeof object + " instead");
     }
-    /*this.renderOnAddition && this.renderAll();*/
+    this._objects.push(object);
+    this._onObjectAdded(object);
     return this;
   },
 
@@ -41,6 +26,9 @@ fabric.Collection = {
    * @return {Self} thisArg
    */
   insertAt: function (object, index, nonSplicing) {
+    if (!object){
+      throw new Error("Must provide an item to fabric.Collection.add, got " + typeof object + " instead");
+    }
     var objects = this.getObjects();
     if (nonSplicing) {
       objects[index] = object;
