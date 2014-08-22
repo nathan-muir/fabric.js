@@ -12,6 +12,26 @@ if (!String.prototype.trim) {
     return this.replace(/^[\s\xA0]+/, '').replace(/[\s\xA0]+$/, '');
   };
 }
+if (!String.prototype.trimLeft) {
+  /**
+   * Trims a string (removing whitespace from the beginning and the end)
+   * @function external:String#trimLeft
+   */
+  String.prototype.trimLeft = function () {
+    // this trim is not fully ES3 or ES5 compliant, but it should cover most cases for now
+    return this.replace(/^[\s\xA0]+/, '');
+  };
+}
+if (!String.prototype.trimRight) {
+  /**
+   * Trims a string (removing whitespace from the beginning and the end)
+   * @function external:String#trimRight
+   */
+  String.prototype.trimRight = function () {
+    // this trim is not fully ES3 or ES5 compliant, but it should cover most cases for now
+    return this.replace(/[\s\xA0]+$/, '');
+  };
+}
 /* _ES5_COMPAT_END_ */
 
 /**
