@@ -199,11 +199,8 @@
       options = options || { };
 
       this.text = text;
-      this.wrappedLines = [];
-      this.__skipTextWrapping = true;
+      this.wrappedLines = null;
       this.setOptions(options);
-      this.__skipTextWrapping = false;
-      this._wrapText();
       this.setCoords();
     },
 
@@ -211,14 +208,8 @@
      * Renders text object on offscreen canvas, so that it would get dimensions
      * @private
      */
-    _wrapText: function() {
-      if (this.__skipTextWrapping) return;
-
-      var canvasEl = fabric.util.createCanvasElement();
-      var ctx = canvasEl.getContext('2d');
-      this._setTextStyles(ctx);
-
-      this.wrappedLines = wrapText(ctx, this.width, this.height, this.lineHeight * this.fontSize, this.text);
+    _clearWrappedLines: function() {
+      this.wrappedLines = null;
     },
 
     /**
@@ -235,6 +226,16 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _render: function(ctx) {
+
+      if (this.wrappedLines == null){
+        ctx.save();
+
+        this._setTextStyles(ctx);
+        this.wrappedLines = wrapText(ctx, this.width, this.height, this.lineHeight * this.fontSize, this.text);
+
+        ctx.restore();
+      }
+
 
       this.transform(ctx, fabric.isLikelyNode);
 
@@ -503,7 +504,7 @@
       this.callSuper('_set', name, value);
 
       if (name in this._textWrapAffectingProps) {
-        this._wrapText();
+        this._clearWrappedLines();
         this.setCoords();
       }
     },
