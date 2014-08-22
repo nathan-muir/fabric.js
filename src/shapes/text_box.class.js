@@ -99,12 +99,13 @@
       fontSize: true,
       fontWeight: true,
       fontFamily: true,
-      textDecoration: true,
       fontStyle: true,
       lineHeight: true,
       stroke: true,
       strokeWidth: true,
-      text: true
+      text: true,
+      width: true,
+      height: true
     },
 
     /**
@@ -163,7 +164,56 @@
      * @default
      */
     backgroundColor:      '',
+    /**
+     * When defined, an object is rendered via border and this property specifies its color
+     * @type String
+     * @default
+     */
+    border:                   null,
 
+    /**
+     * Width of a border used to render this object
+     * @type Number
+     * @default
+     */
+    borderWidth:              1,
+
+    /**
+     * Array specifying dash pattern of an object's border (border must be defined)
+     * @type Array
+     */
+    borderDashArray:          null,
+
+    /**
+     * Line endings style of an object's border (one of "butt", "round", "square")
+     * @type String
+     * @default
+     */
+    borderLineCap:            'butt',
+
+    /**
+     * Corner style of an object's border (one of "bevil", "round", "miter")
+     * @type String
+     * @default
+     */
+    borderLineJoin:           'miter',
+
+    /**
+     * Maximum miter length (used for borderLineJoin = "miter") of an object's border
+     * @type Number
+     * @default
+     */
+    borderMiterLimit:         10,
+
+    /**
+     * If used, sets the `width` automatically based on padding
+     */
+    outerWidth: 0,
+
+    /**
+     * If used, sets the height automatically, based on padding
+     */
+    outerHeight: 0,
     /**
      * Padding on top of text - used for coloring background area
      * @type Number
@@ -240,6 +290,8 @@
       this.transform(ctx, fabric.isLikelyNode);
 
       this._renderTextBoxBackground(ctx);
+
+      this._renderTextBoxBorder(ctx);
 
       this._setTextStyles(ctx);
 
@@ -404,7 +456,34 @@
       ctx.restore();
     },
 
+    /**
+     * @private
+     * @param {CanvasRenderingContext2D} ctx Context to render on
+     */
+    _renderTextBoxBorder: function(ctx){
+      if (!this.border) return;
 
+      ctx.save();
+
+      ctx.lineWidth = this.borderWidth;
+      ctx.lineCap = this.borderLineCap;
+      ctx.lineJoin = this.borderLineJoin;
+      ctx.miterLimit = this.borderMiterLimit;
+      ctx.borderStyle = this.border;
+
+      if (ctx.setLineDash && this.strokeDashArray){
+        ctx.setLineDash(this.strokeDashArray);
+      }
+
+      ctx.strokeRect(
+        -this.width / 2 - this.paddingLeft,
+        -this.height / 2 - this.paddingTop,
+        this.width  + this.paddingLeft + this.paddingRight,
+        this.height + this.paddingTop + this.paddingRight
+      );
+
+      ctx.restore();
+    },
     /**
      * @private
      * @param {Number} lineWidth Width of text line
@@ -458,18 +537,24 @@
 
       if (hitCanvasMode && this.noHitMode) return;
 
-
+      ctx.save();
       if (hitCanvasMode){
+        this.transform(ctx, fabric.isLikelyNode);
         ctx.globalAlpha = 1;
         ctx.fillStyle = this._serialToRgb();
         ctx.strokeStyle = this._serialToRgb();
-      }
-
-      ctx.save();
-      this._render(ctx);
-      if (!noTransform && this.active && !hitCanvasMode) {
-        this.drawBorders(ctx);
-        this.drawControls(ctx);
+        ctx.fillRect(
+          -this.width / 2 - this.paddingLeft,
+          -this.height / 2 - this.paddingTop,
+          this.width  + this.paddingLeft + this.paddingRight,
+          this.height + this.paddingTop + this.paddingRight
+        );
+      } else {
+        this._render(ctx);
+        if (!noTransform && this.active) {
+          this.drawBorders(ctx);
+          this.drawControls(ctx);
+        }
       }
       ctx.restore();
     },
@@ -501,7 +586,20 @@
      * @chainable
      */
     _set: function(name, value) {
+      if (name == 'padding'){
+        this.set('paddingLeft', value);
+        this.set('paddingRight', value);
+        this.set('paddingTop', value);
+        this.set('paddingBottom', value);
+        return
+      }
       this.callSuper('_set', name, value);
+
+      if (name == 'outerWidth' || (this.outerWidth && (name == 'paddingLeft' || name == 'paddingRight'))){
+        this.set('width', this.outerWidth - this.paddingLeft - this.paddingRight);
+      } else if (name == 'outerHeight' || (this.outerHeight && (name == 'paddingTop' || name == 'paddingBottom'))){
+        this.set('height', this.outerHeight - this.paddingTop - this.paddingBottom);
+      }
 
       if (name in this._textWrapAffectingProps) {
         this._clearWrappedLines();
