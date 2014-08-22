@@ -351,7 +351,7 @@
       if (groupSelector) {
         groupSelector.left = pointer.x - groupSelector.ex;
         groupSelector.top = pointer.y - groupSelector.ey;
-        this.renderTop();
+        //this.renderTop();
       }
       else if (!this._currentTransform) {
         // Here we are hovering the canvas then we will determine
