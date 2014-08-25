@@ -5798,6 +5798,8 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
     clear: function () {
       var layerName;
       this._objects.length = 0;
+      this._objectsBySerial = {};
+      this._objectIdx = 0;
       if (this.discardActiveGroup) {
         this.discardActiveGroup();
       }
@@ -5814,6 +5816,15 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       this.fire('canvas:cleared');
       /*this.renderAll();*/
       return this;
+    },
+
+    destroy: function(){
+      this.dispose();
+      for (var p in this){
+        if (this.hasOwnProperty(p)){
+          this[p] = null;
+        }
+      }
     },
 
     setBlocking: function(block){
@@ -6353,12 +6364,21 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
      */
     dispose: function () {
       this.clear();
-
+      fabric.Canvas.activeInstance = null;
       if (!this.interactive) return this;
 
+      if(this.checkSpeedTimeout){
+        fabric.window.clearTimeout(this.checkSpeedTimeout);
+      }
       if (fabric.isTouchSupported) {
         removeListener(this.lowerCanvasEl, 'touchstart', this._onMouseDown);
         removeListener(this.lowerCanvasEl, 'touchmove', this._onMouseMove);
+        if(this.mouseDown){
+          //if mousedown
+          removeListener(fabric.document, 'touchend', this._onMouseUp);
+          removeListener(fabric.document, 'touchmove', this._onMouseMove);
+        }
+
         if (typeof Event !== 'undefined' && 'remove' in Event) {
           Event.remove(this.lowerCanvasEl, 'gesture', this._onGesture);
         }
@@ -6366,6 +6386,11 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
       else {
         removeListener(this.lowerCanvasEl, 'mousedown', this._onMouseDown);
         removeListener(this.lowerCanvasEl, 'mousemove', this._onMouseMove);
+        if(this.mouseDown){
+          //if mousedown
+          removeListener(fabric.document, 'mouseup', this._onMouseUp);
+          removeListener(fabric.document, 'mousemove', this._onMouseMove);
+        }
         removeListener(fabric.window, 'resize', this._onResize);
       }
       return this;
@@ -7590,8 +7615,11 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
 
     checkSpeedRunning: false,
 
+    checkSpeedTimeout: null,
+
     checkSpeed: function(){
       var target;
+      this.checkSpeedTimeout = null;
       if (!this._currentTransform && this.pointerPrevious.x != null && this.pointerPrevious.y != null) {
         var speed = (Math.sqrt(Math.pow(this.pointerPrevious.x - this.pointerCurrent.x, 2) + Math.pow(this.pointerPrevious.y - this.pointerCurrent.y, 2)) / 10) * 1000;
         if (speed <= this.requiredVelocity) {
@@ -7621,7 +7649,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
         this.checkSpeedRunning = false;
         return;
       }
-      fabric.window.setTimeout(this.checkSpeed, 10);
+      this.checkSpeedTimeout = fabric.window.setTimeout(this.checkSpeed, 10);
     },
 
     /**
@@ -7885,7 +7913,7 @@ fabric.Shadow = fabric.util.createClass(/** @lends fabric.Shadow.prototype */ {
 
       if (!this.checkSpeedRunning){
         this.checkSpeedRunning = true;
-        fabric.window.setTimeout(this.checkSpeed, 10);
+        this.checkSpeedTimeout = fabric.window.setTimeout(this.checkSpeed, 10);
       }
 
       if (this.isDrawingMode) {
@@ -17717,8 +17745,8 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       ctx.miterLimit = this.borderMiterLimit;
       ctx.borderStyle = this.border;
 
-      if (ctx.setLineDash && this.strokeDashArray){
-        ctx.setLineDash(this.strokeDashArray);
+      if (ctx.setLineDash && this.borderDashArray){
+        ctx.setLineDash(this.borderDashArray);
       }
 
       ctx.strokeRect(
