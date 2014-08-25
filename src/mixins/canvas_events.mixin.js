@@ -38,8 +38,11 @@
 
     checkSpeedRunning: false,
 
+    checkSpeedTimeout: null,
+
     checkSpeed: function(){
       var target;
+      this.checkSpeedTimeout = null;
       if (!this._currentTransform && this.pointerPrevious.x != null && this.pointerPrevious.y != null) {
         var speed = (Math.sqrt(Math.pow(this.pointerPrevious.x - this.pointerCurrent.x, 2) + Math.pow(this.pointerPrevious.y - this.pointerCurrent.y, 2)) / 10) * 1000;
         if (speed <= this.requiredVelocity) {
@@ -69,7 +72,7 @@
         this.checkSpeedRunning = false;
         return;
       }
-      fabric.window.setTimeout(this.checkSpeed, 10);
+      this.checkSpeedTimeout = fabric.window.setTimeout(this.checkSpeed, 10);
     },
 
     /**
@@ -333,7 +336,7 @@
 
       if (!this.checkSpeedRunning){
         this.checkSpeedRunning = true;
-        fabric.window.setTimeout(this.checkSpeed, 10);
+        this.checkSpeedTimeout = fabric.window.setTimeout(this.checkSpeed, 10);
       }
 
       if (this.isDrawingMode) {

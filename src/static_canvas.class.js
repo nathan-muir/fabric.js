@@ -522,6 +522,8 @@
     clear: function () {
       var layerName;
       this._objects.length = 0;
+      this._objectsBySerial = {};
+      this._objectIdx = 0;
       if (this.discardActiveGroup) {
         this.discardActiveGroup();
       }
@@ -538,6 +540,15 @@
       this.fire('canvas:cleared');
       /*this.renderAll();*/
       return this;
+    },
+
+    destroy: function(){
+      this.dispose();
+      for (var p in this){
+        if (this.hasOwnProperty(p)){
+          this[p] = null;
+        }
+      }
     },
 
     setBlocking: function(block){
@@ -1077,12 +1088,21 @@
      */
     dispose: function () {
       this.clear();
-
+      fabric.Canvas.activeInstance = null;
       if (!this.interactive) return this;
 
+      if(this.checkSpeedTimeout){
+        fabric.window.clearTimeout(this.checkSpeedTimeout);
+      }
       if (fabric.isTouchSupported) {
         removeListener(this.lowerCanvasEl, 'touchstart', this._onMouseDown);
         removeListener(this.lowerCanvasEl, 'touchmove', this._onMouseMove);
+        if(this.mouseDown){
+          //if mousedown
+          removeListener(fabric.document, 'touchend', this._onMouseUp);
+          removeListener(fabric.document, 'touchmove', this._onMouseMove);
+        }
+
         if (typeof Event !== 'undefined' && 'remove' in Event) {
           Event.remove(this.lowerCanvasEl, 'gesture', this._onGesture);
         }
@@ -1090,6 +1110,11 @@
       else {
         removeListener(this.lowerCanvasEl, 'mousedown', this._onMouseDown);
         removeListener(this.lowerCanvasEl, 'mousemove', this._onMouseMove);
+        if(this.mouseDown){
+          //if mousedown
+          removeListener(fabric.document, 'mouseup', this._onMouseUp);
+          removeListener(fabric.document, 'mousemove', this._onMouseMove);
+        }
         removeListener(fabric.window, 'resize', this._onResize);
       }
       return this;
