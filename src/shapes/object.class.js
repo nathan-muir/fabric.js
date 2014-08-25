@@ -844,7 +844,16 @@
         }
 
         if (supportsLineDash) {
-          ctx.setLineDash(this.strokeDashArray);
+          var strokeDashArray;
+          if (this.strokeWidthInvariant){
+            var scale = this.scaleX;
+            strokeDashArray = this.strokeDashArray.map(function(v){
+              return v / scale;
+            });
+          } else {
+            strokeDashArray = this.strokeDashArray;
+          }
+          ctx.setLineDash(strokeDashArray);
           this._stroke && this._stroke(ctx);
         }
         else {

@@ -9170,7 +9170,16 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
         }
 
         if (supportsLineDash) {
-          ctx.setLineDash(this.strokeDashArray);
+          var strokeDashArray;
+          if (this.strokeWidthInvariant){
+            var scale = this.scaleX;
+            strokeDashArray = this.strokeDashArray.map(function(v){
+              return v / scale;
+            });
+          } else {
+            strokeDashArray = this.strokeDashArray;
+          }
+          ctx.setLineDash(strokeDashArray);
           this._stroke && this._stroke(ctx);
         }
         else {
@@ -11776,7 +11785,16 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         if (this.stroke || this.strokeDashArray){
           ctx.save();
           if (this.strokeDashArray) {
-            ctx.setLineDash(this.strokeDashArray)
+            var strokeDashArray;
+            if (this.strokeWidthInvariant){
+              var scale = this.scaleX;
+              strokeDashArray = this.strokeDashArray.map(function(v){
+                return v / scale;
+              });
+            } else {
+              strokeDashArray = this.strokeDashArray;
+            }
+            ctx.setLineDash(strokeDashArray)
           }
           ctx.stroke(this.path2d);
           ctx.restore();
@@ -12028,7 +12046,16 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         if (this.stroke || this.strokeDashArray){
           ctx.save();
           if (this.strokeDashArray) {
-            ctx.setLineDash(this.strokeDashArray)
+            var strokeDashArray;
+            if (this.strokeWidthInvariant){
+              var scale = this.scaleX;
+              strokeDashArray = this.strokeDashArray.map(function(v){
+                return v / scale;
+              });
+            } else {
+              strokeDashArray = this.strokeDashArray;
+            }
+            ctx.setLineDash(strokeDashArray)
           }
           ctx.stroke(this.path2d);
           ctx.restore();
