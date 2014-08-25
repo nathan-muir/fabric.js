@@ -471,8 +471,8 @@
       ctx.miterLimit = this.borderMiterLimit;
       ctx.borderStyle = this.border;
 
-      if (ctx.setLineDash && this.strokeDashArray){
-        ctx.setLineDash(this.strokeDashArray);
+      if (ctx.setLineDash && this.borderDashArray){
+        ctx.setLineDash(this.borderDashArray);
       }
 
       ctx.strokeRect(
