@@ -9,9 +9,18 @@
     var high = line.length - 1;
     var mid;
     var measuredWidth;
+
+    if (ctx.measureText(line.substr(0,1)).width >= maxWidth){
+      return 1;
+    }
+
     while (low != high){
       mid = ((high - low)/2 + low)>>>0;
       measuredWidth = ctx.measureText(line.substr(0, mid + 1)).width;
+      if (measuredWidth == maxWidth){
+        return mid + 1;
+      }
+
       if (measuredWidth > maxWidth){
         high = mid;
       } else {
@@ -21,16 +30,13 @@
     return low;
   }
 
-  function wrapText(ctx, maxWidth, maxHeight, lineHeight, text) {
-    var unwrappedLines = text.split('\n');
-    var wrappedLines = [];
-    var longestLineIdx, endOfLastWordIdx, textLineIdx, unwrappedLine, remainingText, i, longestPossibleLine;
+  function wrapText(ctx, maxWidth, text) {
+    var longestLineIdx, endOfLastWordIdx, textLineIdx, unwrappedLine, remainingText, longestPossibleLine, currentLineWidth,
+        unwrappedLines = text.split('\n'),
+        wrappedLines = [],
+        maximumUsedWidth = 0;
 
     for (textLineIdx = 0; textLineIdx < unwrappedLines.length; textLineIdx++) {
-
-      if ((wrappedLines.length + 1) * lineHeight > maxHeight) {
-        break;
-      }
 
       unwrappedLine = unwrappedLines[textLineIdx].trim();
 
@@ -41,9 +47,9 @@
 
       remainingText = unwrappedLine;
       while (remainingText.length) {
-
+        currentLineWidth = ctx.measureText(remainingText).width;
         // Find the most number of characters, shorter than maxWidth
-        if (ctx.measureText(remainingText).width < maxWidth){
+        if (currentLineWidth <= maxWidth){
           wrappedLines.push(remainingText);
           remainingText = ''
         } else {
@@ -58,17 +64,18 @@
               longestPossibleLine = longestPossibleLine.substr(0, endOfLastWordIdx);
             }
           }
+          currentLineWidth = ctx.measureText(longestPossibleLine).width;
           wrappedLines.push(longestPossibleLine);
           remainingText = remainingText.substr(longestPossibleLine.length, remainingText.length).trimLeft()
         }
 
-        if ((wrappedLines.length + 1) * lineHeight > maxHeight) {
-          break;
+        if (currentLineWidth > maximumUsedWidth){
+          maximumUsedWidth = currentLineWidth;
         }
       }
 
     }
-    return wrappedLines;
+    return [wrappedLines, maximumUsedWidth];
   }
 
   var fabric = global.fabric || (global.fabric = { }),
@@ -272,6 +279,20 @@
     },
 
     /**
+     */
+    computeWrappedLines: function(){
+      var canvasEl = fabric.util.createCanvasElement();
+      var ctx = canvasEl.getContext('2d');
+      this._setTextStyles(ctx);
+      var wrapTextResult = wrapText(ctx, this.width, this.text),
+          wrappedLines = wrapTextResult[0],
+          longestLineWidth = wrapTextResult[1],
+          requiredHeight = wrappedLines.length * this.lineHeight * this.fontSize;
+
+      return {width: longestLineWidth, height: requiredHeight, wrappedLines: wrappedLines}
+    },
+
+    /**
      * @private
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
@@ -281,8 +302,7 @@
         ctx.save();
 
         this._setTextStyles(ctx);
-        this.wrappedLines = wrapText(ctx, this.width, this.height, this.lineHeight * this.fontSize, this.text);
-
+        this.wrappedLines = wrapText(ctx, this.width, this.text)[0];
         ctx.restore();
       }
 
@@ -296,6 +316,11 @@
       this._setTextStyles(ctx);
 
       var textLines = this.wrappedLines;
+
+      // clip to the inner dimensions of the TextBox
+      ctx.beginPath();
+      ctx.rect(-this.width/2, -this.height/2, this.width, this.height);
+      ctx.clip();
 
       ctx.save();
       if (this.textAlign !== 'left') {
@@ -604,6 +629,84 @@
       if (name in this._textWrapAffectingProps) {
         this._clearWrappedLines();
         this.setCoords();
+      }
+    },
+
+
+    /**
+     * Returns SVG representation of an instance
+     * @return {String} svg representation of an instance
+     */
+    toSVG: function(clipPathId) {
+
+      var lineTopOffset = this.fontSize * this.lineHeight,
+          textLeftOffset,
+          bg = "",
+          textTopOffset = this.fontSize - 1,
+          translatePart = "translate(" + toFixed(this.left, 2) + " " + toFixed(this.top, 2) + ")",
+          anglePart = this.angle !== 0 ? (" rotate(" + toFixed(this.angle, 2) + ")") : '',
+          transform = [translatePart, anglePart].join(' ').trim(),
+          textSpans = [],
+          textAnchors = {
+            "left": 'start',
+            "center": 'middle',
+            "right": 'end'
+          },
+          i,
+          len;
+
+      if (this.textAlign == 'left'){
+        textLeftOffset = -(this.width/2);
+      } else if (this.textAlign == 'center'){
+        textLeftOffset = 0;
+      } else /*if (this.textAlign == 'right')*/{
+        textLeftOffset = this.width/2
+      }
+
+      // text and text-background
+      for (i = 0, len = this.wrappedLines.length; i < len; i++) {
+        if (this.wrappedLines[i] !== '') {
+          textSpans.push(
+            '<tspan x="', 0, '" y="',
+              toFixed(((lineTopOffset * i) - this.height / 2), 2) , '">',
+              fabric.util.string.escapeXml(this.wrappedLines[i]),
+            '</tspan>'
+          );
+        }
+
+      }
+      if (this.backgroundColor){
+        bg = [
+        '<rect ',
+            ' fill="', this.backgroundColor,
+            '" x="', toFixed(-this.width / 2 - this.paddingLeft, 2),
+            '" y="', toFixed(-this.height / 2 - this.paddingTop, 2),
+            '" width="', toFixed(this.width + this.paddingLeft + this.paddingRight, 2),
+            '" height="', toFixed(this.height + this.paddingBottom + this.paddingTop, 2),
+          '"></rect>'
+        ].join('');
+      }
+      return {
+        defs: [
+            '<clipPath id="', clipPathId, '"><path d="M', toFixed(-this.width/2,2),',',toFixed(-this.height/2,2),'h',this.width,'v',this.height,'h-',this.width,'v-',this.height,'"/></clipPath>'
+        ].join(''),
+        content: [
+          '<g transform="', transform, '">',
+             bg,
+            '<g style="clip-path:url(#', clipPathId, ');">',
+            '<text ',
+              'font-family="\'' + this.fontFamily + '\'" ',
+              'font-size="' + this.fontSize + '" ',
+              'font-style="' + this.fontStyle + '" ',
+              'font-weight="' + this.fontWeight + '" ',
+              'style="fill:', this.fill, ';text-anchor:', textAnchors[this.textAlign] ,';" ',
+              /* svg starts from left/bottom corner so we normalize height */
+              'transform="translate(', toFixed(textLeftOffset, 2), ' ', toFixed(textTopOffset, 2), ')">',
+              textSpans.join(''),
+            '</text>',
+            '</g>',
+          '</g>'
+        ].join('')
       }
     },
 
