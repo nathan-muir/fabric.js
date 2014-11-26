@@ -32,17 +32,10 @@
      */
     initialize: function(element, options) {
       options || (options = { });
-
       this.callSuper('initialize', options);
-      this._initElement(element);
-      this._originalImage = this.getElement();
       this._initConfig(options);
-
-      this.filters = [ ];
-
-      if (options.filters) {
-        this.filters = options.filters;
-        this.applyFilters();
+      if (element != null) {
+        this.setElement(element);
       }
     },
 
@@ -62,7 +55,7 @@
      */
     setElement: function(element) {
       this._element = element;
-      this._initConfig();
+      this._setWidthHeight({});
       return this;
     },
 
@@ -87,6 +80,7 @@
       // do not render if object is not visible
       if (!this.visible || (hitCanvasMode && this.noHitMode)) return;
 
+      if (this._element == null) return;
 
       ctx.save();
       var m = this.transformMatrix;
@@ -106,11 +100,24 @@
       ctx.save();
       this._setShadow(ctx);
       this.clipTo && fabric.util.clipContext(this, ctx);
-      this._render(ctx);
-      if (this.shadow && !this.shadow.affectStroke) {
-        this._removeShadow(ctx);
+      if (hitCanvasMode){
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this._serialToRgb();
+        ctx.beginPath();
+        ctx.rect(
+          -this.width / 2,
+          -this.height / 2,
+          this.width,
+          this.height
+        );
+        ctx.fill();
+      } else {
+        this._render(ctx);
+        if (this.shadow && !this.shadow.affectStroke) {
+          this._removeShadow(ctx);
+        }
+        this._renderStroke(ctx);
       }
-      this._renderStroke(ctx);
       this.clipTo && ctx.restore();
       ctx.restore();
 
@@ -169,17 +176,6 @@
       ctx.restore();
     },
 
-    /**
-     * Returns object representation of an instance
-     * @param {Array} propertiesToInclude
-     * @return {Object} propertiesToInclude Object representation of an instance
-     */
-    toObject: function(propertiesToInclude) {
-      return extend(this.callSuper('toObject', propertiesToInclude), {
-        src: this._originalImage.src || this._originalImage._src,
-        filters: this.filters.concat()
-      });
-    },
 
     /* _TO_SVG_START_ */
     /**
@@ -247,61 +243,6 @@
     },
 
     /**
-     * Applies filters assigned to this image (from "filters" array)
-     * @mthod applyFilters
-     * @param {Function} callback Callback is invoked when all filters have been applied and new image is generated
-     * @return {fabric.Image} thisArg
-     * @chainable
-     */
-    applyFilters: function(callback) {
-
-      if (this.filters.length === 0) {
-        this.setElement(this._originalImage);
-        callback && callback();
-        return;
-      }
-
-      var imgEl = this._originalImage,
-          canvasEl = fabric.util.createCanvasElement(),
-          replacement = fabric.util.createImage(),
-          _this = this;
-
-      canvasEl.width = imgEl.width;
-      canvasEl.height = imgEl.height;
-
-      canvasEl.getContext('2d').drawImage(imgEl, 0, 0, imgEl.width, imgEl.height);
-
-      this.filters.forEach(function(filter) {
-        filter && filter.applyTo(canvasEl);
-      });
-
-       /** @ignore */
-
-      replacement.width = imgEl.width;
-      replacement.height = imgEl.height;
-
-      if (fabric.isLikelyNode) {
-        // cut off data:image/png;base64, part in the beginning
-        var base64str = canvasEl.toDataURL('image/png').substring(22);
-        replacement.src = new Buffer(base64str, 'base64');
-
-        // onload doesn't fire in some node versions, so we invoke callback manually
-        _this._element = replacement;
-        callback && callback();
-      }
-      else {
-        replacement.onload = function() {
-          _this._element = replacement;
-          callback && callback();
-          replacement.onload = canvasEl = imgEl = null;
-        };
-        replacement.src = canvasEl.toDataURL('image/png');
-      }
-
-      return this;
-    },
-
-    /**
      * @private
      * @param ctx
      */
@@ -326,17 +267,6 @@
     },
 
     /**
-     * The Image class's initialization method. This method is automatically
-     * called by the constructor.
-     * @private
-     * @param {HTMLImageElement|String} el The element representing the image
-     */
-    _initElement: function(element) {
-      this.setElement(fabric.util.getById(element));
-      fabric.util.addClass(this.getElement(), fabric.Image.CSS_CANVAS);
-    },
-
-    /**
      * @private
      * @param {Object} [options] Options object
      */
@@ -348,28 +278,19 @@
 
     /**
      * @private
-     * @param {Object} object Object with filters property
-     */
-    _initFilters: function(object) {
-      if (object.filters && object.filters.length) {
-        this.filters = object.filters.map(function(filterObj) {
-          return filterObj && fabric.Image.filters[filterObj.type].fromObject(filterObj);
-        });
-      }
-    },
-
-    /**
-     * @private
      * @param {Object} [options] Object with width/height properties
      */
     _setWidthHeight: function(options) {
-      this.width = 'width' in options
-        ? options.width
-        : (this.getElement().width || 0);
+      var element = this.getElement(),
+          elementWidth = 0,
+          elementHeight = 0;
 
-      this.height = 'height' in options
-        ? options.height
-        : (this.getElement().height || 0);
+      if (element != null){
+        elementWidth = element.width;
+        elementHeight = element.height;
+      }
+      this.width = ('width' in options ? options.width : elementWidth);
+      this.height = ('height' in options ? options.height : elementHeight);
     },
 
     /**
