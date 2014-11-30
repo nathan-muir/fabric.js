@@ -610,6 +610,11 @@
     return segmentToBezierCache[argsString];
   }
 
+  function isConvex(p0,p1,p2) {
+      return 0 < (p0.x*p1.y + p1.x*p2.y + p0.y*p2.x)
+           - (p0.y*p1.x + p1.y*p2.x + p0.x*p2.y);
+  }
+
   fabric.util.removeFromArray = removeFromArray;
   fabric.util.degreesToRadians = degreesToRadians;
   fabric.util.radiansToDegrees = radiansToDegrees;
@@ -634,5 +639,5 @@
   fabric.util.multiplyTransformMatrices = multiplyTransformMatrices;
   fabric.util.getFunctionBody = getFunctionBody;
   fabric.util.drawArc = drawArc;
-
+  fabric.util.isConvex = isConvex;
 })();

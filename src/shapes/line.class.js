@@ -5,7 +5,11 @@
   var fabric = global.fabric || (global.fabric = { }),
       extend = fabric.util.object.extend,
       coordProps = { 'x1': 1, 'x2': 1, 'y1': 1, 'y2': 1 },
-      supportsLineDash = fabric.StaticCanvas.supports('setLineDash');
+      supportsLineDash = fabric.StaticCanvas.supports('setLineDash'),
+      pi3 = Math.PI / 3,
+      s60 = Math.sin(pi3),
+      c60 = Math.cos(pi3);
+
 
   if (fabric.Line) {
     fabric.warn('fabric.Line is already defined');
@@ -26,6 +30,15 @@
      */
     type: 'line',
 
+    /**
+     * @type bool
+     */
+    arced: false,
+
+    /**
+     * @type bool
+     */
+    convex: false,
     /**
      * Constructor
      * @param {Array} [points] Array of points
@@ -81,6 +94,7 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _render: function(ctx) {
+      var dw, dh, distance, pd, c, x1, y1, x2, y2, r;
       ctx.beginPath();
 
       var isInPathGroup = this.group && this.group.type !== 'group';
@@ -95,13 +109,40 @@
         var xMult = this.x1 <= this.x2 ? -1 : 1;
         var yMult = this.y1 <= this.y2 ? -1 : 1;
 
-        ctx.moveTo(
-          this.width === 1 ? 0 : (xMult * this.width / 2),
-          this.height === 1 ? 0 : (yMult * this.height / 2));
+        if (this.arced) {
+          if (this.convex){
+            x1 = xMult * -1 * this.width/2;
+            y1 = yMult * -1 * this.height/2;
+            x2 = xMult * this.width/2;
+            y2 = yMult * this.height/2;
+          } else {
+            x1 = xMult * this.width/2;
+            y1 = yMult * this.height/2;
+            x2 = xMult * -1 * this.width/2;
+            y2 = yMult * -1 * this.height/2;
+          }
+          c = {
+              x: c60 * (x1 - x2) - s60 * (y1 - y2) + x2,
+              y: s60 * (x1 - x2) + c60 * (y1 - y2) + y2
+          };
+          dw = x1 - x2;
+          dh = y1 - y2;
+          distance = Math.sqrt(dw*dw + dh*dh);
+          r = Math.atan2(c.y - y2, c.x - x2) + Math.PI;
+          ctx.arc(
+            c.x,
+            c.y,
+            distance, r, pi3 + r
+          );
+        } else {
+          ctx.moveTo(
+              this.width === 1 ? 0 : (xMult * this.width / 2),
+              this.height === 1 ? 0 : (yMult * this.height / 2));
 
-        ctx.lineTo(
-          this.width === 1 ? 0 : (xMult * -1 * this.width / 2),
-          this.height === 1 ? 0 : (yMult * -1 * this.height / 2));
+          ctx.lineTo(
+              this.width === 1 ? 0 : (xMult * -1 * this.width / 2),
+              this.height === 1 ? 0 : (yMult * -1 * this.height / 2));
+        }
       }
 
       ctx.lineWidth = this.strokeWidth;

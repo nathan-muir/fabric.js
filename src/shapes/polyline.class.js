@@ -5,7 +5,11 @@
   var fabric = global.fabric || (global.fabric = { }),
       toFixed = fabric.util.toFixed,
       min = fabric.util.array.min,
-      path2dSupported = (typeof fabric.window.Path2D != "undefined");
+      path2dSupported = (typeof fabric.window.Path2D != "undefined"),
+      isConvex = fabric.util.isConvex,
+      pi3 = Math.PI / 3,
+      s60 = Math.sin(pi3),
+      c60 = Math.cos(pi3);
 
   if (fabric.Polyline) {
     fabric.warn('fabric.Polyline is already defined');
@@ -31,6 +35,10 @@
      */
     path2d: null,
 
+    /**
+     * @type bool
+     */
+    arced: false,
     /**
      * Constructor
      * @param {Array} points Array of points
@@ -110,10 +118,10 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     _render: function(ctx) {
-      if (path2dSupported){ //assumed `supportsLineDash`
+      if (path2dSupported && !this.arced){ //assumed `supportsLineDash`
         if (!this.path2d){
           this.path2d = new Path2D();
-          this.__render(this.path2d);
+          this.__render(this.path2d)
         }
         this.fill && ctx.fill(this.path2d);
         if (this.stroke || this.strokeDashArray){
@@ -134,11 +142,15 @@
           ctx.restore();
         }
       } else {
-        ctx.beginPath();
-        this.__render(ctx);
-        this._renderFill(ctx);
-        if (this.stroke || this.strokeDashArray) {
-          this._renderStroke(ctx);
+        if (this.arced){
+          this.__renderArc(ctx);
+        } else {
+          ctx.beginPath();
+          this.__render(ctx);
+          this._renderFill(ctx);
+          if (this.stroke || this.strokeDashArray) {
+            this._renderStroke(ctx);
+          }
         }
       }
     },
@@ -152,6 +164,36 @@
       }
     },
 
+    __renderArc: function(ctx){
+      var p2, p1, p0, tmp, c, dw, dh, distance, pd,
+          convex = false, r;
+      for (var i = 1, len = this.points.length; i < len; i++) {
+        p2 = this.points[i];
+        p1 = this.points[i - 1];
+        if (i > 1) {
+          p0 = this.points[i - 2];
+          convex = isConvex(p0, p1, p2);
+          if (convex){
+            tmp = p2;
+            p2 = p1;
+            p1 = tmp;
+          }
+        }
+        c = {
+            x: c60 * (p1.x - p2.x) - s60 * (p1.y - p2.y) + p2.x,
+            y: s60 * (p1.x - p2.x) + c60 * (p1.y - p2.y) + p2.y
+        };
+        dw = p1.x - p2.x;
+        dh = p1.y - p2.y;
+        distance = Math.sqrt(dw*dw + dh*dh);
+        r = Math.atan2(c.y - p2.y, c.x - p2.x) + Math.PI;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, distance, r, pi3 + r);
+        if (this.stroke || this.strokeDashArray) {
+          this._renderStroke(ctx);
+        }
+      }
+    },
     /**
      * @private
      * @param {CanvasRenderingContext2D} ctx Context to render on
