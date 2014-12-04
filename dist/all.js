@@ -12340,11 +12340,14 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
         throw new Error('`path` argument is required');
       }
 
-      var fromArray = _toString.call(path) === '[object Array]';
+      var constructor = _toString.call(path);
 
-      if (fromArray){
+      if ((Array.isArray && Array.isArray(path)) || constructor === '[object Array]') {
         this.path = path;
         this.path2d = false;
+      } else if (constructor === '[object Path2D]'){
+        this.path = path;
+        this.path2d = true;
       } else {
         var _tmp = this._parsePath(path);
         this.path = _tmp[0];
@@ -12739,6 +12742,22 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
           ctx.fill(this.path);
         }
         if (this.stroke){
+          if (!hitCanvasMode && this.strokeDashArray){
+            // Spec requires the concatenation of two copies the dash list when the number of elements is odd
+            if (1 & this.strokeDashArray.length) {
+              this.strokeDashArray.push.apply(this.strokeDashArray, this.strokeDashArray);
+            }
+            var strokeDashArray;
+            if (this.strokeWidthInvariant){
+              var scale = this.scaleX;
+              strokeDashArray = this.strokeDashArray.map(function(v){
+                return v / scale;
+              });
+            } else {
+              strokeDashArray = this.strokeDashArray;
+            }
+            ctx.setLineDash(strokeDashArray);
+          }
           ctx.stroke(this.path);
         }
       } else {
