@@ -982,6 +982,9 @@
      * @chainable
      */
     sendToBack: function (object) {
+      if (!object){
+        throw new Error("Must provide an item to fabric.StaticCanvas.sendToBack, got " + typeof object + " instead");
+      }
       removeFromArray(this._objects, object);
       this._objects.unshift(object);
       return this;
@@ -995,6 +998,9 @@
      * @chainable
      */
     bringToFront: function (object) {
+      if (!object){
+        throw new Error("Must provide an item to fabric.StaticCanvas.bringToFront, got " + typeof object + " instead");
+      }
       removeFromArray(this._objects, object);
       this._objects.push(object);
       return this;
