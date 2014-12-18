@@ -12371,10 +12371,9 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
         controlPoint = this._calculateControlPointFromPassthrough(x1, y1, px, py, x2, y2);
 
-        boundX.push(this._bezierExtent(x1, y2, controlPoint.x));
-        boundY.push(this._bezierExtent(y1, y2, controlPoint.y));
-        boundX.push(this._bezierExtent(x2, y1, controlPoint.x));
-        boundY.push(this._bezierExtent(y2, y1, controlPoint.y));
+        boundX.push(x1, x2, controlPoint.x);
+        boundY.push(y1, y2, controlPoint.y);
+
         commands.push([controlPoint.x, controlPoint.y, x2, y2]);
         i += 4;
       }
