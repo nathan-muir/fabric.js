@@ -723,7 +723,8 @@
 
       if (hitCanvasMode && this.noHitMode) return;
 
-      if ((this.left + this.currentWidth < 0 || this.top + this.currentHeight < 0 || this.left - this.currentWidth > ctx.canvas.width || this.top - this.currentHeight > ctx.canvas.height)) return;
+      var d = Math.max(this.currentHeight, this.currentWidth);
+      if ((this.left + d < 0 || this.top + d < 0 || this.left - d > ctx.canvas.width || this.top - d > ctx.canvas.height)) return;
 
       ctx.save();
 

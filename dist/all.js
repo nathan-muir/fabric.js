@@ -9060,7 +9060,8 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
 
       if (hitCanvasMode && this.noHitMode) return;
 
-      if ((this.left + this.currentWidth < 0 || this.top + this.currentHeight < 0 || this.left - this.currentWidth > ctx.canvas.width || this.top - this.currentHeight > ctx.canvas.height)) return;
+      var d = Math.max(this.currentHeight, this.currentWidth);
+      if ((this.left + d < 0 || this.top + d < 0 || this.left - d > ctx.canvas.width || this.top - d > ctx.canvas.height)) return;
 
       ctx.save();
 
@@ -12963,7 +12964,8 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       if (hitCanvasMode && this.noHitMode) return;
 
-      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
+      var d = Math.max(this.currentHeight, this.currentWidth);
+      if ((this.left + d < 0 || this.top + d < 0 || this.left - d > ctx.canvas.width || this.top - d > ctx.canvas.height)) return;
 
       ctx.save();
       var m = this.transformMatrix;

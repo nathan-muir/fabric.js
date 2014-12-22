@@ -448,7 +448,8 @@
 
       if (hitCanvasMode && this.noHitMode) return;
 
-      if ((this.left + this.width < 0 || this.top + this.height < 0 || this.left - this.width > this.canvas.width || this.top - this.height > this.canvas.height)) return;
+      var d = Math.max(this.currentHeight, this.currentWidth);
+      if ((this.left + d < 0 || this.top + d < 0 || this.left - d > ctx.canvas.width || this.top - d > ctx.canvas.height)) return;
 
       ctx.save();
       var m = this.transformMatrix;
