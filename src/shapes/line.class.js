@@ -145,7 +145,11 @@
         }
       }
 
-      ctx.lineWidth = this.strokeWidth;
+      if (this.strokeWidthInvariant){
+        ctx.lineWidth = this.strokeWidth / this.scaleX;
+      } else {
+        ctx.lineWidth = this.strokeWidth;
+      }
 
       // TODO: test this
       // make sure setting "fill" changes color of a line
