@@ -39,6 +39,11 @@
      * @type bool
      */
     convex: false,
+
+    /**
+     * Hacks; ensures perfectly vertical or horizontal lines get rendered. 
+     */
+    _renderIfZeroWidth: true,
     /**
      * Constructor
      * @param {Array} [points] Array of points
@@ -69,8 +74,8 @@
     _setWidthHeight: function(options) {
       options || (options = { });
 
-      this.set('width', Math.abs(this.x2 - this.x1) || 1);
-      this.set('height', Math.abs(this.y2 - this.y1) || 1);
+      this.set('width', Math.abs(this.x2 - this.x1));
+      this.set('height', Math.abs(this.y2 - this.y1));
 
       this.set('left', 'left' in options ? options.left : (Math.min(this.x1, this.x2) + this.width / 2));
       this.set('top', 'top' in options ? options.top : (Math.min(this.y1, this.y2) + this.height / 2));
@@ -136,12 +141,12 @@
           );
         } else {
           ctx.moveTo(
-              this.width === 1 ? 0 : (xMult * this.width / 2),
-              this.height === 1 ? 0 : (yMult * this.height / 2));
+              xMult * this.width / 2,
+              yMult * this.height / 2);
 
           ctx.lineTo(
-              this.width === 1 ? 0 : (xMult * -1 * this.width / 2),
-              this.height === 1 ? 0 : (yMult * -1 * this.height / 2));
+              xMult * -1 * this.width / 2,
+              yMult * -1 * this.height / 2);
         }
       }
 
@@ -168,8 +173,8 @@
       var
         xMult = this.x1 <= this.x2 ? -1 : 1,
         yMult = this.y1 <= this.y2 ? -1 : 1,
-        x = this.width === 1 ? 0 : xMult * this.width / 2,
-        y = this.height === 1 ? 0 : yMult * this.height / 2;
+        x = xMult * this.width / 2,
+        y = yMult * this.height / 2;
 
       ctx.beginPath();
       fabric.util.drawDashedLine(ctx, x, y, -x, -y, this.strokeDashArray);

@@ -376,6 +376,15 @@
      */
     lockUniScaling:           false,
 
+
+    /**
+     * Hacks: Typically we won't render zero-width objects, however it
+     *  probably makes sense for some classes.
+     * @type Boolean
+     * @default
+     */
+    _renderIfZeroWidth:       false,
+
     /**
      * List of properties to consider when checking if state
      * of an object is changed (fabric.Object#hasStateChanged)
@@ -719,7 +728,7 @@
      */
     render: function(ctx, noTransform, hitCanvasMode) {
       // do not render if width/height are zeros or object is not visible
-      if (this.width === 0 || this.height === 0 || !this.visible) return;
+      if ((!this._renderIfZeroWidth && (this.width === 0 || this.height === 0)) || !this.visible) return;
 
       if (hitCanvasMode && this.noHitMode) return;
 
