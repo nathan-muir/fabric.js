@@ -19,10 +19,11 @@
       max = fabric.util.array.max,
       extend = fabric.util.object.extend,
       _toString = Object.prototype.toString,
-      drawArc = fabric.util.drawArc;
+      drawArc = fabric.util.drawArc,
+      supportsPath2dSvg = fabric.StaticCanvas.supports('path2dSvg');
 
   fabric.pathCache = null;
-  if (typeof fabric.window.Path2D != "undefined"){
+  if (supportsPath2dSvg){
     var Path2DCache = function Path2DCache_constructor(){
       var self = this;
       self.dict = {};

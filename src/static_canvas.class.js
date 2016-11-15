@@ -1212,6 +1212,18 @@
           catch (e) { }
           return false;
 
+        case 'path2dSvg':
+          if (typeof fabric.window.Path2D === 'undefined'){
+            return false
+          }
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0,0,1,1);
+          var path = new Path2D('m0,0L1,0L1,1L0,1Z');
+          ctx.fillStyle = 'black';
+          ctx.fill(path);
+          var imgData = ctx.getImageData(0,0,1,1).data;
+          // generously accept if the pixel is non-white
+          return imgData[0] != 255 || imgData[1] !== 255 || imgData[2] !== 255;
         default:
           return null;
       }
